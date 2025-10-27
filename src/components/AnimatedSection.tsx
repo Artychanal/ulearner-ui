@@ -1,15 +1,14 @@
 'use client';
 
-import { motion, useAnimation } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
-import { useEffect } from 'react';
+import { motion, useAnimation } from "framer-motion";
+import { useInView } from "react-intersection-observer";
+import { useEffect } from "react";
 
-interface AnimatedSectionProps {
+interface AnimatedSectionProps extends React.HTMLAttributes<HTMLElement> {
   children: React.ReactNode;
-  className?: string;
 }
 
-export default function AnimatedSection({ children, className }: AnimatedSectionProps) {
+export default function AnimatedSection({ children, className, ...rest }: AnimatedSectionProps) {
   const controls = useAnimation();
   const [ref, inView] = useInView({
     triggerOnce: true,
@@ -18,9 +17,9 @@ export default function AnimatedSection({ children, className }: AnimatedSection
 
   useEffect(() => {
     if (inView) {
-      controls.start('visible');
+      controls.start("visible");
     } else {
-      controls.start('hidden');
+      controls.start("hidden");
     }
   }, [controls, inView]);
 
@@ -35,6 +34,7 @@ export default function AnimatedSection({ children, className }: AnimatedSection
       }}
       transition={{ duration: 0.5 }}
       className={className}
+      {...rest}
     >
       {children}
     </motion.section>

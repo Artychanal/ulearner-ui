@@ -1,14 +1,16 @@
 
-import { User } from '@/types/user';
-
-export interface Instructor extends User {
+export type Instructor = {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
   title: string;
   bio: string;
   social: {
     twitter?: string;
     linkedin?: string;
   };
-}
+};
 
 export const instructors: Instructor[] = [
   {
