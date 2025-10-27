@@ -46,7 +46,8 @@ export default function FavoritesPage() {
     const entries = authState.user.favoriteCourses ?? [];
     const authoredCourses = authState.user.authoredCourses;
 
-    return entries
+    return (
+      entries
       .map((entry) => {
         if (entry.origin === "catalog") {
           const match = catalog.find((course) => String(course.id) === String(entry.courseId));
@@ -84,8 +85,9 @@ export default function FavoritesPage() {
           href: `/dashboard/courses/${match.id}/edit`,
         } satisfies FavoriteDisplay;
       })
-      .filter((item): item is FavoriteDisplay => Boolean(item))
-      .sort((a, b) => new Date(b.addedAt).valueOf() - new Date(a.addedAt).valueOf());
+      .filter((item): item is FavoriteDisplay => item !== null)
+      .sort((a, b) => new Date(b.addedAt).valueOf() - new Date(a.addedAt).valueOf())
+    );
   }, [authState, catalog]);
 
   if (authState.status !== "authenticated") {
