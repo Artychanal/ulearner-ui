@@ -1,0 +1,15 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paint0_linear" x1="114" y1="52" x2="520" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#14B8A6"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="420" rx="32" fill="url(#paint0_linear)"/>
+  <circle cx="180" cy="124" r="34" stroke="rgba(255,255,255,0.35)" stroke-width="6"/>
+  <path d="M120 198C120 186.954 128.954 178 140 178H500C511.046 178 520 186.954 520 198V214C520 225.046 511.046 234 500 234H140C128.954 234 120 225.046 120 214V198Z" fill="rgba(15,23,42,0.2)"/>
+  <path d="M120 252C120 240.954 128.954 232 140 232H428C439.046 232 448 240.954 448 252V320C448 331.046 439.046 340 428 340H140C128.954 340 120 331.046 120 320V252Z" fill="rgba(15,23,42,0.24)"/>
+  <text x="132" y="210" fill="#FFFFFF" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="48">State Management</text>
+  <text x="132" y="284" fill="#FFFFFF" font-family="Poppins, Arial, sans-serif" font-weight="600" font-size="20">Redux Toolkit · Zustand · Architectural patterns</text>
+  <text x="132" y="312" fill="rgba(255,255,255,0.7)" font-family="Poppins, Arial, sans-serif" font-weight="500" font-size="18">Model complex UIs with confidence</text>
+</svg>

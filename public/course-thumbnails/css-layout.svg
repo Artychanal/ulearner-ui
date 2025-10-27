@@ -1,0 +1,15 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paint0_linear" x1="96" y1="54" x2="524" y2="372" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#EC4899"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="420" rx="32" fill="url(#paint0_linear)"/>
+  <rect x="112" y="96" width="192" height="192" rx="24" fill="rgba(15,23,42,0.22)"/>
+  <rect x="324" y="96" width="204" height="88" rx="20" fill="rgba(15,23,42,0.22)"/>
+  <rect x="324" y="198" width="204" height="90" rx="20" fill="rgba(15,23,42,0.28)"/>
+  <rect x="112" y="308" width="416" height="48" rx="16" fill="rgba(15,23,42,0.24)"/>
+  <text x="120" y="340" fill="#FFFFFF" font-family="Poppins, Arial, sans-serif" font-weight="600" font-size="20">Responsive layouts · Grid systems · Modern CSS</text>
+  <text x="120" y="60" fill="#FFFFFF" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="48">CSS Grid & Flexbox</text>
+</svg>

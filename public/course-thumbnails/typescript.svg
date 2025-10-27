@@ -1,0 +1,15 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paint0_linear" x1="68" y1="46" x2="556" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E3A8A"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="420" rx="32" fill="url(#paint0_linear)"/>
+  <rect x="84" y="80" width="472" height="84" rx="16" fill="rgba(15,23,42,0.28)"/>
+  <rect x="84" y="184" width="368" height="60" rx="16" fill="rgba(15,23,42,0.18)"/>
+  <rect x="84" y="264" width="472" height="80" rx="24" fill="rgba(15,23,42,0.24)"/>
+  <text x="108" y="136" fill="#FFFFFF" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="52">TypeScript Mastery</text>
+  <text x="108" y="214" fill="rgba(255,255,255,0.72)" font-family="Poppins, Arial, sans-serif" font-weight="500" font-size="22">Types, generics, decorators & scalable patterns</text>
+  <text x="132" y="312" fill="#FFFFFF" font-family="Poppins, Arial, sans-serif" font-weight="600" font-size="20">Strong tooling • Safer APIs • Confident refactors</text>
+</svg>

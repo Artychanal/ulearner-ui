@@ -1,0 +1,14 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paint0_linear" x1="82" y1="42" x2="558" y2="370" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BE123C"/>
+      <stop offset="1" stop-color="#DB2777"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="420" rx="32" fill="url(#paint0_linear)"/>
+  <polygon points="320,92 448,166 448,310 320,354 192,310 192,166" fill="rgba(15,23,42,0.28)"/>
+  <circle cx="320" cy="224" r="64" stroke="rgba(255,255,255,0.45)" stroke-width="10"/>
+  <text x="132" y="118" fill="#FFFFFF" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="48">GraphQL Fundamentals</text>
+  <text x="132" y="186" fill="rgba(255,255,255,0.72)" font-family="Poppins, Arial, sans-serif" font-weight="500" font-size="22">Queries, mutations, schemas & tooling</text>
+  <text x="164" y="328" fill="#FFFFFF" font-family="Poppins, Arial, sans-serif" font-weight="600" font-size="20">APIs with type safety · Federation · Real-time data</text>
+</svg>

@@ -1,0 +1,16 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paint0_linear" x1="78" y1="40" x2="562" y2="380" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1D4ED8"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="420" rx="32" fill="url(#paint0_linear)"/>
+  <circle cx="140" cy="118" r="18" stroke="white" stroke-opacity="0.3" stroke-width="3"/>
+  <circle cx="488" cy="100" r="28" stroke="white" stroke-opacity="0.3" stroke-width="4"/>
+  <circle cx="526" cy="304" r="18" stroke="white" stroke-opacity="0.2" stroke-width="3"/>
+  <path d="M156 292C156 258.862 182.862 232 216 232H420C453.138 232 480 258.862 480 292V300C480 333.138 453.138 360 420 360H216C182.862 360 156 333.138 156 300V292Z" fill="rgba(15,23,42,0.25)"/>
+  <text x="64" y="182" fill="#FFFFFF" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="60">Next.js</text>
+  <text x="64" y="234" fill="rgba(255,255,255,0.68)" font-family="Poppins, Arial, sans-serif" font-weight="500" font-size="24">Ship production apps fast</text>
+  <text x="200" y="322" fill="#FFFFFF" font-family="Poppins, Arial, sans-serif" font-weight="600" font-size="20">Modern routing · Server actions · Performance</text>
+</svg>
