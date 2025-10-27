@@ -1,5 +1,6 @@
 
 import Link from "next/link";
+import type { ReactElement } from "react";
 
 const year = new Date().getFullYear();
 
@@ -30,7 +31,7 @@ const footerColumns: Array<{ heading: string; links: Array<{ label: string; href
   },
 ];
 
-const socialIcons: Array<{ name: string; href: string; icon: JSX.Element }> = [
+const socialIcons: Array<{ name: string; href: string; icon: ReactElement }> = [
   {
     name: "Twitter",
     href: "https://twitter.com",

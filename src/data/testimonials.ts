@@ -1,10 +1,13 @@
 
-import { User } from '@/types/user';
-
-export interface Testimonial {
-  user: User;
+export type Testimonial = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar: string;
+  };
   statement: string;
-}
+};
 
 export const testimonials: Testimonial[] = [
   {

@@ -129,21 +129,18 @@ export default function CourseEditor({
     }));
   };
 
-  const handleItemChange = (moduleId: string, itemId: string, itemPatch: Partial<CourseContentItem>) => {
+  const handleItemChange = (
+    moduleId: string,
+    itemId: string,
+    updater: (item: CourseContentItem) => CourseContentItem,
+  ) => {
     setCourse((prev) => ({
       ...prev,
       modules: prev.modules.map((module) =>
         module.id === moduleId
           ? {
               ...module,
-              items: module.items.map((item) =>
-                item.id === itemId
-                  ? {
-                      ...item,
-                      ...itemPatch,
-                    }
-                  : item,
-              ),
+              items: module.items.map((item) => (item.id === itemId ? updater(item) : item)),
             }
           : module,
       ),
@@ -326,7 +323,12 @@ export default function CourseEditor({
                             type="text"
                             className="form-control"
                             value={item.title}
-                            onChange={(event) => handleItemChange(module.id, item.id, { title: event.target.value })}
+                            onChange={(event) =>
+                              handleItemChange(module.id, item.id, (current) => ({
+                                ...current,
+                                title: event.target.value,
+                              }))
+                            }
                           />
                         </div>
                         {item.type === "text" && (
@@ -336,7 +338,11 @@ export default function CourseEditor({
                               className="form-control"
                               rows={4}
                               value={item.body}
-                              onChange={(event) => handleItemChange(module.id, item.id, { body: event.target.value })}
+                              onChange={(event) =>
+                                handleItemChange(module.id, item.id, (current) =>
+                                  current.type === "text" ? { ...current, body: event.target.value } : current,
+                                )
+                              }
                             />
                           </div>
                         )}
@@ -348,7 +354,11 @@ export default function CourseEditor({
                                 type="url"
                                 className="form-control"
                                 value={item.url}
-                                onChange={(event) => handleItemChange(module.id, item.id, { url: event.target.value })}
+                                onChange={(event) =>
+                                  handleItemChange(module.id, item.id, (current) =>
+                                    current.type === "video" ? { ...current, url: event.target.value } : current,
+                                  )
+                                }
                               />
                             </div>
                             <div className="col-md-4">
@@ -357,7 +367,11 @@ export default function CourseEditor({
                                 type="text"
                                 className="form-control"
                                 value={item.duration}
-                                onChange={(event) => handleItemChange(module.id, item.id, { duration: event.target.value })}
+                                onChange={(event) =>
+                                  handleItemChange(module.id, item.id, (current) =>
+                                    current.type === "video" ? { ...current, duration: event.target.value } : current,
+                                  )
+                                }
                               />
                             </div>
                           </div>
@@ -371,7 +385,13 @@ export default function CourseEditor({
                                 min={0}
                                 className="form-control"
                                 value={item.totalPoints}
-                                onChange={(event) => handleItemChange(module.id, item.id, { totalPoints: Number(event.target.value) })}
+                                onChange={(event) =>
+                                  handleItemChange(module.id, item.id, (current) =>
+                                    current.type === "quiz"
+                                      ? { ...current, totalPoints: Number(event.target.value) }
+                                      : current,
+                                  )
+                                }
                               />
                             </div>
                             <div className="col-md-8">

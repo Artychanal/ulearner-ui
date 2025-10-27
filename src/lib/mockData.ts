@@ -8,7 +8,13 @@ import type { DemoAccount, UserProfile } from "@/types/user";
 import { generateId } from "@/lib/id";
 import { courses } from "@/data/courses";
 
-export const catalogCourses: CourseSummary[] = courses;
+export const catalogCourses: CourseSummary[] = courses.map((course) => ({
+  ...course,
+  lessons: course.lessons.map((lesson) => ({
+    ...lesson,
+    id: String(lesson.id),
+  })),
+}));
 
 const demoModules = (): CourseModule[] => [
   {

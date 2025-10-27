@@ -1,12 +1,12 @@
 'use client';
 
-import { motion, useAnimation } from "framer-motion";
+import { type HTMLMotionProps, motion, useAnimation } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import { useEffect } from "react";
+import { type ReactNode, useEffect } from "react";
 
-interface AnimatedSectionProps extends React.HTMLAttributes<HTMLElement> {
-  children: React.ReactNode;
-}
+type AnimatedSectionProps = HTMLMotionProps<"section"> & {
+  children: ReactNode;
+};
 
 export default function AnimatedSection({ children, className, ...rest }: AnimatedSectionProps) {
   const controls = useAnimation();
