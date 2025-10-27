@@ -45,49 +45,48 @@ export default function FavoritesPage() {
 
     const entries = authState.user.favoriteCourses ?? [];
     const authoredCourses = authState.user.authoredCourses;
+    const collected: FavoriteDisplay[] = [];
 
-    return (
-      entries
-      .map((entry) => {
-        if (entry.origin === "catalog") {
-          const match = catalog.find((course) => String(course.id) === String(entry.courseId));
-          if (!match) {
-            return null;
-          }
-
-          return {
-            key: `catalog-${match.id}`,
-            courseId: match.id,
-            origin: entry.origin,
-            addedAt: entry.addedAt,
-            title: match.title,
-            description: match.description,
-            meta: match.instructor,
-            imageUrl: match.imageUrl,
-            href: `/courses/${match.id}`,
-          } satisfies FavoriteDisplay;
-        }
-
-        const match = authoredCourses.find((course) => course.id === String(entry.courseId));
+    for (const entry of entries) {
+      if (entry.origin === "catalog") {
+        const match = catalog.find((course) => String(course.id) === String(entry.courseId));
         if (!match) {
-          return null;
+          continue;
         }
 
-        return {
-          key: `authored-${match.id}`,
+        collected.push({
+          key: `catalog-${match.id}`,
           courseId: match.id,
           origin: entry.origin,
           addedAt: entry.addedAt,
           title: match.title,
           description: match.description,
-          meta: match.category,
+          meta: match.instructor,
           imageUrl: match.imageUrl,
-          href: `/dashboard/courses/${match.id}/edit`,
-        } satisfies FavoriteDisplay;
-      })
-      .filter((item): item is FavoriteDisplay => item !== null)
-      .sort((a, b) => new Date(b.addedAt).valueOf() - new Date(a.addedAt).valueOf())
-    );
+          href: `/courses/${match.id}`,
+        });
+        continue;
+      }
+
+      const match = authoredCourses.find((course) => course.id === String(entry.courseId));
+      if (!match) {
+        continue;
+      }
+
+      collected.push({
+        key: `authored-${match.id}`,
+        courseId: match.id,
+        origin: entry.origin,
+        addedAt: entry.addedAt,
+        title: match.title,
+        description: match.description,
+        meta: match.category,
+        imageUrl: match.imageUrl,
+        href: `/dashboard/courses/${match.id}/edit`,
+      });
+    }
+
+    return collected.sort((a, b) => new Date(b.addedAt).valueOf() - new Date(a.addedAt).valueOf());
   }, [authState, catalog]);
 
   if (authState.status !== "authenticated") {
