@@ -167,20 +167,6 @@ export default function SignupScreen() {
                   </button>
                 </form>
 
-                <div className="border rounded-3 px-3 py-3 mt-4 bg-light">
-                  <p className="small text-secondary mb-2">Demo accounts you can use right away:</p>
-                  <ul className="list-unstyled small mb-0">
-                    <li className="d-flex justify-content-between align-items-center">
-                      <span className="fw-semibold">learner@example.com</span>
-                      <span className="font-monospace text-secondary">password123</span>
-                    </li>
-                    <li className="d-flex justify-content-between align-items-center">
-                      <span className="fw-semibold">mentor@example.com</span>
-                      <span className="font-monospace text-secondary">mentor123</span>
-                    </li>
-                  </ul>
-                </div>
-
                 <p className="text-center text-secondary mt-4 mb-0">
                   Already have an account?{" "}
                   <Link href="/login" className="fw-semibold text-primary text-decoration-none">
