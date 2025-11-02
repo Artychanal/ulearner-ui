@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: ulearner-backend
+  profiles:
+    active: dev
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: UlearnerHikariCP
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 600000 # 10 minutes
+      max-lifetime: 1800000 # 30 minutes
+      connection-timeout: 30000 # 30 seconds
+      validation-timeout: 5000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  sql:
+    init:
+      mode: never
+
+server:
+  error:
+    include-message: always
+
+logging:
+  level:
+    org.springframework: INFO
+    com.ulearner: DEBUG
