@@ -90,10 +90,16 @@ Visit `http://localhost:3000` to interact with the UI during development.
 
 ```bash
 cd ulearner-backend
+docker compose up -d postgres
+```
+
+Wait until the container reports `healthy` (check with `docker compose ps` or `docker compose logs -f postgres`), then launch the Spring Boot app in the same directory:
+
+```bash
 ./mvnw spring-boot:run
 ```
 
-The application uses the `application-dev.yml` profile by default; configure database credentials as needed. Health checks are exposed at `/actuator/health`.
+The application uses the `application-dev.yml` profile by default and expects the database on `localhost:5432` with credentials `ulearner_dev/ulearner_dev`. Health checks are exposed at `/actuator/health`. Stop the database with `docker compose down` when finished. If you previously created a Postgres volume with different credentials, remove it with `docker compose down -v` before starting the container.
 
 ---
 
