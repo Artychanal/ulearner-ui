@@ -8,6 +8,10 @@ import com.ulearner.backend.dto.AuthResponse;
 import com.ulearner.backend.dto.request.LoginRequest;
 import com.ulearner.backend.dto.request.RefreshTokenRequest;
 import com.ulearner.backend.dto.request.UserRegistrationRequest;
+import com.ulearner.backend.exception.ConflictException;
+import com.ulearner.backend.exception.ForbiddenException;
+import com.ulearner.backend.exception.UnauthorizedException;
+import com.ulearner.backend.exception.ValidationException;
 import com.ulearner.backend.mapper.UserMapper;
 import com.ulearner.backend.repository.RoleRepository;
 import com.ulearner.backend.repository.UserRepository;
@@ -25,10 +29,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +51,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse registerUser(UserRegistrationRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
+            throw new ConflictException("Email is already registered");
         }
 
         User user = User.builder()
@@ -78,7 +80,7 @@ public class AuthServiceImpl implements AuthService {
                 new UsernamePasswordAuthenticationToken(request.email(), request.password()));
 
         if (!(authentication.getPrincipal() instanceof UserPrincipal principal)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication failed");
+            throw new UnauthorizedException("Authentication failed");
         }
 
         User user = loadActiveUser(principal.getUsername());
@@ -96,7 +98,7 @@ public class AuthServiceImpl implements AuthService {
             jwtTokenService.validateRefreshTokenOrThrow(refreshTokenValue);
         } catch (JwtException ex) {
             refreshTokenService.revokeByTokenValue(refreshTokenValue);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token", ex);
+            throw new UnauthorizedException("Invalid refresh token", ex);
         }
 
         RefreshToken storedToken = refreshTokenService.getActiveToken(refreshTokenValue);
@@ -106,13 +108,13 @@ public class AuthServiceImpl implements AuthService {
             email = jwtTokenService.extractUsername(refreshTokenValue);
         } catch (JwtException ex) {
             refreshTokenService.revoke(storedToken);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token", ex);
+            throw new UnauthorizedException("Invalid refresh token", ex);
         }
 
         User user = loadActiveUser(email);
         if (!storedToken.getUser().getId().equals(user.getId())) {
             refreshTokenService.revoke(storedToken);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token does not belong to the user");
+            throw new UnauthorizedException("Refresh token does not belong to the user");
         }
 
         UserPrincipal principal = UserPrincipal.fromUser(user);
@@ -129,7 +131,7 @@ public class AuthServiceImpl implements AuthService {
         try {
             jwtTokenService.validateRefreshTokenOrThrow(token);
         } catch (JwtException ex) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token", ex);
+            throw new UnauthorizedException("Invalid refresh token", ex);
         }
         RefreshToken storedToken = refreshTokenService.getActiveToken(token);
         refreshTokenService.revoke(storedToken);
@@ -144,8 +146,7 @@ public class AuthServiceImpl implements AuthService {
         for (String name : resolvedNames) {
             Optional<Role> role = roleRepository.findByName(name);
             if (role.isEmpty()) {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "Role '%s' was not found".formatted(name));
+                throw new ValidationException("Role '%s' was not found".formatted(name));
             }
             roles.add(role.get());
         }
@@ -155,14 +156,14 @@ public class AuthServiceImpl implements AuthService {
     private User loadActiveUser(String email) {
         User user = userRepository
                 .findOneWithRolesByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
 
         if (user.getStatus() == UserStatus.BLOCKED) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User account is blocked");
+            throw new ForbiddenException("User account is blocked");
         }
 
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User account is not active");
+            throw new ForbiddenException("User account is not active");
         }
 
         return user;
