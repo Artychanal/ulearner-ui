@@ -710,6 +710,8 @@ html[data-theme="light"] .features-section {
   border: 1px solid rgba(129, 140, 248, 0.28);
   backdrop-filter: blur(16px);
   color: rgba(226, 232, 240, 0.92);
+  position: relative;
+  z-index: 20;
 }
 
 .catalog-filter-card .card-body {
@@ -756,6 +758,27 @@ html[data-theme="light"] .features-section {
   background-image: var(--gradient-primary);
   color: #fff;
   border-color: transparent;
+}
+
+.catalog-filter-card .dropdown-menu {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(129, 140, 248, 0.35);
+  box-shadow: 0 18px 40px -24px rgba(99, 102, 241, 0.65);
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.catalog-filter-card .dropdown-menu label {
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.catalog-filter-card .dropdown-menu .form-check-input {
+  border-color: rgba(129, 140, 248, 0.45);
+  background-color: transparent;
+}
+
+.catalog-filter-card .dropdown-menu .form-check-input:checked {
+  background-color: rgba(99, 102, 241, 0.85);
+  border-color: rgba(129, 140, 248, 0.75);
 }
 
 html[data-theme="light"] .catalog-filter-card {
@@ -805,6 +828,26 @@ html[data-theme="light"] .catalog-filter-card .btn-outline-primary {
 html[data-theme="light"] .catalog-filter-card .btn-outline-primary:hover,
 html[data-theme="light"] .catalog-filter-card .btn-outline-primary.active {
   color: #fff;
+}
+
+html[data-theme="light"] .catalog-filter-card .dropdown-menu {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(226, 232, 240, 0.7);
+  box-shadow: 0 24px 48px -30px rgba(15, 23, 42, 0.25);
+  color: #1f2937;
+}
+
+html[data-theme="light"] .catalog-filter-card .dropdown-menu label {
+  color: #1f2937;
+}
+
+html[data-theme="light"] .catalog-filter-card .dropdown-menu .form-check-input {
+  border-color: rgba(148, 163, 184, 0.6);
+}
+
+html[data-theme="light"] .catalog-filter-card .dropdown-menu .form-check-input:checked {
+  background-color: #4f46e5;
+  border-color: #4338ca;
 }
 
 .feature-card {

@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -49,11 +49,9 @@ const Header = () => {
   const { authState, logout } = useAuth();
   const { theme, toggleTheme, isReady } = useTheme();
   const isDarkMode = theme === "dark";
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const handleDashboardClick = () => {
-    router.push("/dashboard");
-  };
+  const [menuOpenKey, setMenuOpenKey] = useState<string | null>(null);
+  const menuContextKey = `${pathname}-${authState.status}`;
+  const isMenuOpen = menuOpenKey === menuContextKey;
 
   const favoriteCount = authState.status === "authenticated" ? authState.user.favoriteCourses.length : 0;
   const isAuthenticated = authState.status === "authenticated";
@@ -64,9 +62,18 @@ const Header = () => {
     { href: "/#instructors", label: "Mentors" },
   ];
 
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [pathname, authState.status]);
+  const toggleMenu = () => {
+    setMenuOpenKey((current) => (current === menuContextKey ? null : menuContextKey));
+  };
+
+  const closeMenu = () => {
+    setMenuOpenKey(null);
+  };
+
+  const handleDashboardClick = () => {
+    closeMenu();
+    router.push("/dashboard");
+  };
 
   return (
     <header className="site-header py-3">
@@ -80,7 +87,7 @@ const Header = () => {
             <button
               type="button"
               className="btn btn-sm btn-ghost px-3 menu-toggle d-lg-none"
-              onClick={() => setIsMenuOpen((prev) => !prev)}
+              onClick={toggleMenu}
               aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
               aria-expanded={isMenuOpen}
               aria-controls="primary-navigation"
@@ -122,10 +129,14 @@ const Header = () => {
                         width="18"
                         height="18"
                         viewBox="0 0 24 24"
-                        fill="currentColor"
+                        fill={favoriteCount > 0 ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                         style={{ color: favoriteCount > 0 ? "#dc3545" : "currentColor" }}
                       >
-                        <path d="M12 21s-6.5-4.35-9.17-8.12C-0.84 7.8 1.14 3 5 3c2.14 0 3.63 1.37 4.5 2.62C10.37 4.37 11.86 3 14 3c3.86 0 5.84 4.8 2.17 9.88C18.5 16.65 12 21 12 21z" />
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.5 4.42 3 7.5 3c1.74 0 3.41 0.97 4.5 2.5C13.59 3.97 15.26 3 17 3 20.08 3 22.5 5.5 22.5 8.5c0 3.78-3.4 6.86-8.55 11.53L12 21.35z" />
                       </svg>
                       {favoriteCount > 0 && (
                         <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">

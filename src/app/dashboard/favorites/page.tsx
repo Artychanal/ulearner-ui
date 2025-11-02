@@ -133,7 +133,7 @@ export default function FavoritesPage() {
           <div className="row g-4">
             {favorites.map((favorite) => (
               <div key={favorite.key} className="col-md-6 col-xl-4 d-flex">
-                <article className="card border-0 shadow-sm h-100 w-100 overflow-hidden">
+                <article className="card border-0 shadow-sm h-100 w-100 overflow-hidden position-relative">
                   <div className="ratio ratio-16x9 position-relative">
                     <Image
                       src={favorite.imageUrl}
@@ -142,6 +142,13 @@ export default function FavoritesPage() {
                       sizes="(min-width: 1200px) 400px, (min-width: 768px) 50vw, 100vw"
                       className="object-fit-cover"
                     />
+                    <Link
+                      href={favorite.href}
+                      className="stretched-link"
+                      aria-label={`Open ${favorite.title}`}
+                    >
+                      <span className="visually-hidden">Open {favorite.title}</span>
+                    </Link>
                   </div>
                   <div className="card-body p-4 d-flex flex-column gap-3">
                     <div className="d-flex justify-content-between align-items-start gap-2">
@@ -151,7 +158,11 @@ export default function FavoritesPage() {
                         >
                           {favorite.origin === "catalog" ? "Catalog" : "My course"}
                         </span>
-                        <h2 className="h5 fw-semibold mb-1">{favorite.title}</h2>
+                        <h2 className="h5 fw-semibold mb-1">
+                          <Link href={favorite.href} className="text-decoration-none text-reset">
+                            {favorite.title}
+                          </Link>
+                        </h2>
                         <p className="text-secondary small mb-0">{favorite.meta}</p>
                       </div>
                       <FavoriteButton courseId={favorite.courseId} origin={favorite.origin} />

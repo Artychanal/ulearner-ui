@@ -21,6 +21,14 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
           className="object-fit-cover rounded-top"
           priority={false}
         />
+        <Link
+          href={`/courses/${course.id}`}
+          className="stretched-link"
+          aria-label={`Open ${course.title}`}
+          title={`Open ${course.title}`}
+        >
+          <span className="visually-hidden">Open {course.title}</span>
+        </Link>
       </div>
       <div className="card-body d-flex flex-column p-4 gap-3">
         <div className="d-flex justify-content-between align-items-center">
@@ -36,7 +44,11 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
           <span className="bullet" aria-hidden />
           <span>{course.lessons.length} lessons</span>
         </div>
-        <h3 className="h5 fw-bold mb-0">{course.title}</h3>
+        <h3 className="h5 fw-bold mb-0">
+          <Link href={`/courses/${course.id}`} className="text-decoration-none text-reset">
+            {course.title}
+          </Link>
+        </h3>
         <p className="text-secondary mb-0 flex-grow-1">{course.description}</p>
         <div className="d-flex justify-content-between align-items-center mt-auto pt-3 border-top border-light-subtle">
           <FavoriteButton courseId={course.id} origin="catalog" size="sm" />

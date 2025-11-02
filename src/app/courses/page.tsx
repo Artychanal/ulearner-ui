@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CourseCard from "@/components/CourseCard";
 import { courseCategories, courses, type Course } from "@/data/courses";
 
@@ -56,6 +56,17 @@ export default function CoursesPage() {
   const [query, setQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOption>("featured");
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+  const categoryDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const selectedCategoryList = courseCategories.filter((category) => selectedCategories.includes(category));
+
+  const categorySummary =
+    selectedCategoryList.length === 0
+      ? "All categories"
+      : selectedCategoryList.length === 1
+        ? selectedCategoryList[0]
+        : `${selectedCategoryList[0]} +${selectedCategoryList.length - 1}`;
 
   const filteredCourses = useMemo(() => {
     const afterSearch = applySearch(courses, query);
@@ -63,11 +74,11 @@ export default function CoursesPage() {
     return applySort(afterCategoryFilter, sort);
   }, [query, selectedCategories, sort]);
 
-  const handleCategoryToggle = (category: string) => {
+  const handleCategoryToggle = useCallback((category: string) => {
     setSelectedCategories((current) =>
       current.includes(category) ? current.filter((item) => item !== category) : [...current, category],
     );
-  };
+  }, []);
 
   const activeFilters = query.trim().length > 0 || selectedCategories.length > 0 || sort !== "featured";
 
@@ -75,7 +86,47 @@ export default function CoursesPage() {
     setQuery("");
     setSelectedCategories([]);
     setSort("featured");
+    setIsCategoryMenuOpen(false);
   };
+
+  useEffect(() => {
+    if (!isCategoryMenuOpen) {
+      return;
+    }
+
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const container = categoryDropdownRef.current;
+
+      if (container && !container.contains(target)) {
+        setIsCategoryMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+    };
+  }, [isCategoryMenuOpen]);
+
+  useEffect(() => {
+    if (!isCategoryMenuOpen) {
+      return;
+    }
+
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsCategoryMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeydown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeydown);
+    };
+  }, [isCategoryMenuOpen]);
 
   return (
     <section className="py-5">
@@ -105,33 +156,112 @@ export default function CoursesPage() {
                   />
                 </div>
                 <div className="col-12 col-lg-4">
-                  <span className="form-label small text-uppercase text-secondary fw-semibold d-block mb-2">
+                  <span
+                    id="catalog-category-label"
+                    className="form-label small text-uppercase text-secondary fw-semibold d-block mb-2"
+                  >
                     Categories
                   </span>
-                  <div className="d-flex flex-wrap gap-2">
-                    {courseCategories.map((category) => {
-                      const inputId = `category-${category.replace(/\s+/g, "-").toLowerCase()}`;
-                      const selected = selectedCategories.includes(category);
+                  <div ref={categoryDropdownRef} className="position-relative">
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary w-100 d-flex justify-content-between align-items-center"
+                      aria-expanded={isCategoryMenuOpen}
+                      aria-haspopup="menu"
+                      aria-controls="catalog-category-menu"
+                      aria-labelledby="catalog-category-label"
+                      onClick={() => setIsCategoryMenuOpen((open) => !open)}
+                    >
+                      <span className="text-truncate">{categorySummary}</span>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                        focusable="false"
+                        style={{
+                          transition: "transform 0.2s ease-in-out",
+                          transform: isCategoryMenuOpen ? "rotate(180deg)" : "rotate(0deg)",
+                        }}
+                      >
+                        <path
+                          d="M6 9l6 6 6-6"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    {isCategoryMenuOpen && (
+                      <div
+                        id="catalog-category-menu"
+                        className="dropdown-menu show w-100 shadow-sm border-0 mt-2 p-3"
+                        role="menu"
+                        style={{ zIndex: 1055 }}
+                      >
+                        <div
+                          className="d-flex flex-column gap-2"
+                          role="group"
+                          aria-labelledby="catalog-category-label"
+                          style={{ maxHeight: "18rem", overflowY: "auto" }}
+                        >
+                          {courseCategories.map((category) => {
+                            const inputId = `category-${category.replace(/\s+/g, "-").toLowerCase()}`;
+                            const selected = selectedCategories.includes(category);
 
-                      return (
-                        <div key={category} className="form-check form-check-inline m-0">
-                          <input
-                            id={inputId}
-                            type="checkbox"
-                            className="btn-check"
-                            checked={selected}
-                            onChange={() => handleCategoryToggle(category)}
-                          />
-                          <label
-                            className={`btn btn-sm btn-outline-primary rounded-pill ${selected ? "active" : ""}`}
-                            htmlFor={inputId}
-                          >
-                            {category}
-                          </label>
+                            return (
+                              <label
+                                key={category}
+                                htmlFor={inputId}
+                                className={`d-flex align-items-center justify-content-between gap-3 rounded-3 px-3 py-2 ${
+                                  selected ? "bg-primary bg-opacity-10" : ""
+                                }`}
+                              >
+                                <span className="fw-semibold">{category}</span>
+                                <input
+                                  id={inputId}
+                                  type="checkbox"
+                                  className="form-check-input"
+                                  checked={selected}
+                                  onChange={() => handleCategoryToggle(category)}
+                                />
+                              </label>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                        <div className="d-flex justify-content-between align-items-center pt-3 mt-3 border-top">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-link text-decoration-none px-0"
+                            onClick={() => setSelectedCategories([])}
+                          >
+                            Clear all
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-primary"
+                            onClick={() => setIsCategoryMenuOpen(false)}
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
+                  {selectedCategoryList.length > 0 && (
+                    <div className="d-flex flex-wrap gap-2 mt-2">
+                      {selectedCategoryList.map((category) => (
+                        <span
+                          key={category}
+                          className="badge rounded-pill bg-primary-subtle text-primary fw-semibold"
+                        >
+                          {category}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="col-12 col-lg-2">
                   <label htmlFor="sort-select" className="form-label small text-uppercase text-secondary fw-semibold">
