@@ -80,7 +80,7 @@ export default function DashboardPage() {
           </Link>
         </header>
 
-        <section className="card border-0 shadow-sm">
+        <section className="card border-0 shadow-sm dashboard-teach-card">
           <div className="card-body p-4 p-lg-5">
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h2 className="h4 fw-semibold mb-0">Learning progress</h2>
@@ -183,8 +183,8 @@ export default function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="table-responsive">
-                <table className="table align-middle">
+              <div className="table-responsive dashboard-teach-table-wrapper">
+                <table className="table align-middle dashboard-teach-table mb-0">
                   <thead>
                     <tr>
                       <th scope="col">Course</th>
