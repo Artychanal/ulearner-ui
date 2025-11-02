@@ -9,6 +9,7 @@ import com.ulearner.backend.dto.LessonDto;
 import com.ulearner.backend.dto.request.CourseCreateRequest;
 import com.ulearner.backend.dto.request.CourseUpdateRequest;
 import com.ulearner.backend.dto.request.LessonRequest;
+import com.ulearner.backend.exception.ResourceNotFoundException;
 import com.ulearner.backend.mapper.CourseMapper;
 import com.ulearner.backend.mapper.LessonMapper;
 import com.ulearner.backend.repository.CourseRepository;
@@ -21,10 +22,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +40,7 @@ public class CourseServiceImpl implements CourseService {
     @Transactional
     public CourseDto createCourse(CourseCreateRequest request) {
         User instructor = userRepository.findById(request.instructorId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instructor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
 
         Course course = Course.builder()
                 .title(request.title())
@@ -63,7 +62,7 @@ public class CourseServiceImpl implements CourseService {
     @Transactional
     public CourseDto updateCourse(Long courseId, CourseUpdateRequest request) {
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         if (request.title() != null) {
             course.setTitle(request.title());
@@ -76,7 +75,7 @@ public class CourseServiceImpl implements CourseService {
         }
         if (request.instructorId() != null) {
             User instructor = userRepository.findById(request.instructorId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instructor not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Instructor not found"));
             course.setInstructor(instructor);
         }
         if (request.lessons() != null) {
@@ -90,15 +89,13 @@ public class CourseServiceImpl implements CourseService {
     @Override
     @Transactional
     public void deleteCourse(Long courseId) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
-        courseRepository.delete(course);
+        courseRepository.findById(courseId).ifPresent(courseRepository::delete);
     }
 
     @Override
     public CourseDto getCourse(Long courseId) {
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
         return courseMapper.toDto(course);
     }
 
@@ -114,7 +111,7 @@ public class CourseServiceImpl implements CourseService {
     @Transactional
     public LessonDto addLesson(Long courseId, LessonRequest request) {
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
 
         Lesson lesson = Lesson.builder()
                 .title(request.title())

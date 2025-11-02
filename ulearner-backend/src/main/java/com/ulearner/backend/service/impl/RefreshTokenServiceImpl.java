@@ -2,15 +2,14 @@ package com.ulearner.backend.service.impl;
 
 import com.ulearner.backend.domain.RefreshToken;
 import com.ulearner.backend.domain.User;
+import com.ulearner.backend.exception.UnauthorizedException;
 import com.ulearner.backend.repository.RefreshTokenRepository;
 import com.ulearner.backend.security.jwt.JwtToken;
 import com.ulearner.backend.service.RefreshTokenService;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -34,14 +33,14 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     public RefreshToken getActiveToken(String token) {
         RefreshToken stored = refreshTokenRepository
                 .findByToken(token)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token not found"));
+                .orElseThrow(() -> new UnauthorizedException("Refresh token not found"));
 
         if (stored.isRevoked()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token has been revoked");
+            throw new UnauthorizedException("Refresh token has been revoked");
         }
 
         if (stored.getExpiresAt().isBefore(Instant.now())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token has expired");
+            throw new UnauthorizedException("Refresh token has expired");
         }
 
         return stored;

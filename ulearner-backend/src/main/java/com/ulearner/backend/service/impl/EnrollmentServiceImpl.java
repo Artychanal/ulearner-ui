@@ -5,6 +5,8 @@ import com.ulearner.backend.domain.Enrollment;
 import com.ulearner.backend.domain.EnrollmentStatus;
 import com.ulearner.backend.domain.User;
 import com.ulearner.backend.dto.EnrollmentDto;
+import com.ulearner.backend.exception.ConflictException;
+import com.ulearner.backend.exception.ResourceNotFoundException;
 import com.ulearner.backend.mapper.EnrollmentMapper;
 import com.ulearner.backend.repository.CourseRepository;
 import com.ulearner.backend.repository.EnrollmentRepository;
@@ -13,10 +15,8 @@ import com.ulearner.backend.service.EnrollmentService;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -32,13 +32,13 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Transactional
     public EnrollmentDto enrollStudent(Long courseId, Long studentId) {
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
         User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
         enrollmentRepository.findByStudentAndCourse(student, course)
                 .ifPresent(enrollment -> {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Student already enrolled in course");
+                    throw new ConflictException("Student already enrolled in course");
                 });
 
         Enrollment enrollment = Enrollment.builder()
@@ -55,7 +55,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Transactional
     public EnrollmentDto updateStatus(Long enrollmentId, EnrollmentStatus status) {
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Enrollment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
         enrollment.setStatus(status);
         return enrollmentMapper.toDto(enrollment);
     }
@@ -63,7 +63,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Override
     public List<EnrollmentDto> getEnrollmentsForStudent(Long studentId) {
         User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
         return enrollmentRepository.findAllByStudent(student).stream()
                 .map(enrollmentMapper::toDto)
                 .collect(Collectors.toList());
@@ -72,7 +72,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Override
     public List<EnrollmentDto> getEnrollmentsForCourse(Long courseId) {
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
         return enrollmentRepository.findAllByCourse(course).stream()
                 .map(enrollmentMapper::toDto)
                 .collect(Collectors.toList());
