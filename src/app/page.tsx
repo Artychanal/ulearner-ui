@@ -13,10 +13,63 @@ const totalLessons = courses.reduce(
 );
 const uniqueInstructors = new Set(courses.map((course) => course.instructor)).size;
 const featuredCourse = courses[0] ?? null;
+const envSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+const siteUrl =
+  envSiteUrl && envSiteUrl.length > 0 ? envSiteUrl : "https://ulearner-ui.vercel.app";
+const structuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "ULearner",
+    url: siteUrl,
+    logo: `${siteUrl}/favicon.ico`,
+    sameAs: [
+      "https://www.linkedin.com/company/ulearner",
+      "https://twitter.com/ulearner",
+      "https://www.youtube.com/@ulearner",
+    ],
+    description:
+      "ULearner delivers mentor-led online courses for developers, designers, and product professionals.",
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        contactType: "customer support",
+        email: "hello@ulearner.com",
+        availableLanguage: ["English"],
+      },
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "ULearner Trending Courses",
+    itemListOrder: "https://schema.org/ItemListOrderAscending",
+    itemListElement: courses.map((course, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      item: {
+        "@type": "Course",
+        name: course.title,
+        description: course.description,
+        provider: {
+          "@type": "Organization",
+          name: "ULearner",
+          sameAs: siteUrl,
+        },
+        url: `${siteUrl}/courses/${course.id}`,
+      },
+    })),
+  },
+];
 
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <AnimatedSection className="hero-section py-5 py-lg-6 position-relative overflow-hidden">
         <div className="hero-blur" aria-hidden />
         <div className="container position-relative">
