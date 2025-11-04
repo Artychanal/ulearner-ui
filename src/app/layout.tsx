@@ -57,6 +57,9 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.ico",
   },
+  verification: {
+    google: "G49TZVgM6GqhoYL3ffe9dvoyq4bQJ1zSUrhy5wO6PL4",
+  },
   category: "education",
 };
 
