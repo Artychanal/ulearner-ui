@@ -2,10 +2,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import FavoriteButton from "@/components/FavoriteButton";
-import { Course } from "@/data/courses";
+import type { CourseSummary } from "@/types/course";
 
 interface CourseCardProps {
-  course: Course;
+  course: CourseSummary;
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
@@ -14,7 +14,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
       <span className="course-card-glow" aria-hidden />
       <div className="ratio ratio-16x9 position-relative">
         <Image
-          src={course.imageUrl}
+          src={course.imageUrl ?? "/course-thumbnails/nextjs.svg"}
           alt={course.title}
           fill
           sizes="(min-width: 1200px) 400px, (min-width: 992px) 33vw, (min-width: 576px) 50vw, 100vw"

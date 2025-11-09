@@ -1,68 +1,111 @@
 import Link from "next/link";
 import CourseCard from "@/components/CourseCard";
-import { courses } from "@/data/courses";
-import { testimonials } from "@/data/testimonials";
 import TestimonialCard from "@/components/TestimonialCard";
-import { instructors } from "@/data/instructors";
 import InstructorCard from "@/components/InstructorCard";
 import AnimatedSection from "@/components/AnimatedSection";
+import { fetchCatalogCourses, fetchCatalogInstructors, fetchCatalogTestimonials } from "@/lib/catalog-service";
+import { adaptCatalogCourse } from "@/lib/catalog-adapter";
+import type { CourseSummary } from "@/types/course";
+import type { CatalogCourseCollection, CatalogInstructor, CatalogTestimonial } from "@/types/catalog";
 
-const totalLessons = courses.reduce(
-  (accumulator, course) => accumulator + course.lessons.length,
-  0
-);
-const uniqueInstructors = new Set(courses.map((course) => course.instructor)).size;
-const featuredCourse = courses[0] ?? null;
-const envSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-const siteUrl =
-  envSiteUrl && envSiteUrl.length > 0 ? envSiteUrl : "https://ulearner-ui.vercel.app";
-const structuredData = [
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "ULearner",
-    url: siteUrl,
-    logo: `${siteUrl}/favicon.ico`,
-    sameAs: [
-      "https://www.linkedin.com/company/ulearner",
-      "https://twitter.com/ulearner",
-      "https://www.youtube.com/@ulearner",
-    ],
-    description:
-      "ULearner delivers mentor-led online courses for developers, designers, and product professionals.",
-    contactPoint: [
-      {
-        "@type": "ContactPoint",
-        contactType: "customer support",
-        email: "hello@ulearner.com",
-        availableLanguage: ["English"],
-      },
-    ],
-  },
-  {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: "ULearner Trending Courses",
-    itemListOrder: "https://schema.org/ItemListOrderAscending",
-    itemListElement: courses.map((course, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      item: {
-        "@type": "Course",
-        name: course.title,
-        description: course.description,
-        provider: {
-          "@type": "Organization",
-          name: "ULearner",
-          sameAs: siteUrl,
+export const revalidate = 60;
+
+type HomeData = {
+  courses: CourseSummary[];
+  testimonials: CatalogTestimonial[];
+  instructors: CatalogInstructor[];
+};
+
+function emptyCourseCollection(): CatalogCourseCollection {
+  return {
+    items: [],
+    meta: {
+      total: 0,
+      limit: 0,
+      offset: 0,
+    },
+  };
+}
+
+async function loadHomeData(): Promise<HomeData> {
+  const [coursesResult, testimonialsResult, instructorsResult] = await Promise.allSettled([
+    fetchCatalogCourses({ limit: 6 }),
+    fetchCatalogTestimonials({ limit: 3 }),
+    fetchCatalogInstructors(),
+  ]);
+
+  const courseCollection =
+    coursesResult.status === "fulfilled" ? coursesResult.value : emptyCourseCollection();
+  const testimonialItems =
+    testimonialsResult.status === "fulfilled" ? testimonialsResult.value.items : [];
+  const instructorItems = instructorsResult.status === "fulfilled" ? instructorsResult.value : [];
+
+  return {
+    courses: courseCollection.items.map(adaptCatalogCourse),
+    testimonials: testimonialItems,
+    instructors: instructorItems,
+  };
+}
+
+function buildStructuredData(courses: CourseSummary[], siteUrl: string) {
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "ULearner",
+      url: siteUrl,
+      logo: `${siteUrl}/favicon.ico`,
+      sameAs: [
+        "https://www.linkedin.com/company/ulearner",
+        "https://twitter.com/ulearner",
+        "https://www.youtube.com/@ulearner",
+      ],
+      description:
+        "ULearner delivers mentor-led online courses for developers, designers, and product professionals.",
+      contactPoint: [
+        {
+          "@type": "ContactPoint",
+          contactType: "customer support",
+          email: "hello@ulearner.com",
+          availableLanguage: ["English"],
         },
-        url: `${siteUrl}/courses/${course.id}`,
-      },
-    })),
-  },
-];
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: "ULearner Trending Courses",
+      itemListOrder: "https://schema.org/ItemListOrderAscending",
+      itemListElement: courses.map((course, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "Course",
+          name: course.title,
+          description: course.description,
+          provider: {
+            "@type": "Organization",
+            name: "ULearner",
+            sameAs: siteUrl,
+          },
+          url: `${siteUrl}/courses/${course.id}`,
+        },
+      })),
+    },
+  ];
+}
 
-export default function Home() {
+export default async function Home() {
+  const { courses, testimonials, instructors } = await loadHomeData();
+  const totalLessons = courses.reduce((accumulator, course) => accumulator + course.lessons.length, 0);
+  const uniqueInstructorCount =
+    instructors.length > 0
+      ? instructors.length
+      : new Set(courses.map((course) => course.instructorId ?? course.instructor)).size;
+  const featuredCourse = courses[0] ?? null;
+  const envSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const siteUrl = envSiteUrl && envSiteUrl.length > 0 ? envSiteUrl : "https://ulearner-ui.vercel.app";
+  const structuredData = buildStructuredData(courses, siteUrl);
   return (
     <>
       <script
@@ -105,7 +148,7 @@ export default function Home() {
                   <span>Lessons ready to explore today</span>
                 </div>
                 <div className="hero-metric">
-                  <p className="display-6 fw-bold mb-1">{uniqueInstructors}</p>
+                  <p className="display-6 fw-bold mb-1">{uniqueInstructorCount}</p>
                   <span>World-class mentors on call</span>
                 </div>
               </section>
@@ -184,7 +227,7 @@ export default function Home() {
         </div>
         <div className="row g-4 mt-1">
           {testimonials.map((testimonial) => (
-            <div key={testimonial.user.id} className="col-md-6 col-lg-4">
+            <div key={testimonial.id ?? testimonial.userEmail} className="col-md-6 col-lg-4">
               <TestimonialCard testimonial={testimonial} />
             </div>
           ))}

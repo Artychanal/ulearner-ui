@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import QuizRunner from "@/components/learn/QuizRunner";
 import type { CourseContentItem, CourseModule, QuizAttempt } from "@/types/course";
-import { getCatalogCourseModules } from "@/lib/mockData";
+import { buildModulesFromLessons } from "@/lib/course-content";
 
 type CourseLearnScreenProps = {
   courseId: string;
@@ -58,7 +58,7 @@ export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) 
         title: summary.title,
         description: summary.description,
         instructor: summary.instructor,
-        modules: getCatalogCourseModules(Number(summary.id)),
+        modules: buildModulesFromLessons(summary),
         origin: "catalog" as const,
       };
     }

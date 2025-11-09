@@ -4,9 +4,11 @@ import { createContext, startTransition, useCallback, useContext, useEffect, use
 import { useRouter } from "next/navigation";
 import type { AuthState, FavoriteCourse, UserProfile } from "@/types/user";
 import type { AuthoredCourse, CourseSummary, EnrolledCourseProgress } from "@/types/course";
-import { catalogCourses, demoAccounts, initialUserProfile } from "@/lib/mockData";
+import { demoAccounts, initialUserProfile } from "@/lib/mockData";
 import { clearStoredUser, loadUserFromStorage, persistUserToStorage } from "@/lib/storage";
 import { generateId } from "@/lib/id";
+import { fetchCatalogCourses } from "@/lib/catalog-service";
+import { adaptCatalogCourse } from "@/lib/catalog-adapter";
 
 type AuthContextValue = {
   authState: AuthState;
@@ -44,6 +46,7 @@ function normalizeUserProfile(profile: UserProfile): UserProfile {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [authState, setAuthState] = useState<AuthState>({ status: "loading" });
+  const [catalog, setCatalog] = useState<CourseSummary[]>([]);
 
   useEffect(() => {
     const stored = loadUserFromStorage<UserProfile | null>(null);
@@ -54,6 +57,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAuthState({ status: "unauthenticated" });
       }
     });
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCatalog() {
+      try {
+        const response = await fetchCatalogCourses({ limit: 200 });
+        if (active) {
+          setCatalog(response.items.map(adaptCatalogCourse));
+        }
+      } catch (error) {
+        console.error("Failed to load catalog", error);
+      }
+    }
+
+    loadCatalog();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const syncUser = useCallback((user: UserProfile) => {
@@ -131,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const isCatalogCourse = catalogCourses.some((course) => String(course.id) === String(courseId));
+      const isCatalogCourse = catalog.some((course) => String(course.id) === String(courseId));
 
       const updatedUser: UserProfile = {
         ...authState.user,
@@ -150,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       syncUser(updatedUser);
     },
-    [authState, syncUser],
+    [authState, catalog, syncUser],
   );
 
   const updateProgress = useCallback(
@@ -288,7 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       authState,
-      catalog: catalogCourses,
+      catalog,
       login,
       register,
       logout,
@@ -299,7 +323,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateProfile,
       toggleFavorite,
     }),
-    [authState, login, register, logout, joinCourse, updateProgress, createCourse, updateCourse, updateProfile, toggleFavorite],
+    [
+      authState,
+      catalog,
+      login,
+      register,
+      logout,
+      joinCourse,
+      updateProgress,
+      createCourse,
+      updateCourse,
+      updateProfile,
+      toggleFavorite,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

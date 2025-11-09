@@ -2,15 +2,18 @@ export type Lesson = {
   id: string;
   title: string;
   duration: string;
+  durationMinutes?: number;
 };
 
 export type CourseSummary = {
-  id: number;
+  id: string;
   title: string;
   instructor: string;
+  instructorId?: string;
   description: string;
   price: number;
-  imageUrl: string;
+  category: string;
+  imageUrl?: string;
   lessons: Lesson[];
 };
 
