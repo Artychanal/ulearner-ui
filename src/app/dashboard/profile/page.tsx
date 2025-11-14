@@ -25,10 +25,12 @@ type FormState = {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { authState, updateProfile, logout } = useAuth();
+  const { authState, updateProfile, logout, uploadMedia } = useAuth();
   const [formState, setFormState] = useState<FormState | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (authState.status === "unauthenticated") {
@@ -48,6 +50,14 @@ export default function ProfilePage() {
       });
     }
   }, [authState]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) {
+        URL.revokeObjectURL(avatarPreviewUrl);
+      }
+    };
+  }, [avatarPreviewUrl]);
 
   const suggestedAvatars = useMemo(() => {
     if (authState.status !== "authenticated") {
@@ -77,8 +87,14 @@ export default function ProfilePage() {
   }
 
   const { user } = authState;
+  const currentAvatarSrc = avatarPreviewUrl ?? (formState.avatarUrl || DEFAULT_AVATAR);
 
   const handleAvatarUrlChange = (avatarUrl: string) => {
+    if (avatarPreviewUrl) {
+      URL.revokeObjectURL(avatarPreviewUrl);
+      setAvatarPreviewUrl(null);
+    }
+    setPendingAvatarFile(null);
     setFormState((previous) => (previous ? { ...previous, avatarUrl } : previous));
   };
 
@@ -98,18 +114,14 @@ export default function ProfilePage() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      if (result) {
-        handleAvatarUrlChange(result);
-        setFeedback({ type: "success", message: "Avatar preview updated. Save changes to keep it." });
-      }
-    };
-    reader.onerror = () => {
-      setFeedback({ type: "error", message: "We couldn't read that image. Try another file." });
-    };
-    reader.readAsDataURL(file);
+    const previewUrl = URL.createObjectURL(file);
+    if (avatarPreviewUrl) {
+      URL.revokeObjectURL(avatarPreviewUrl);
+    }
+    setPendingAvatarFile(file);
+    setAvatarPreviewUrl(previewUrl);
+    setFormState((previous) => (previous ? { ...previous, avatarUrl: previewUrl } : previous));
+    setFeedback({ type: "success", message: "Avatar preview updated. Save changes to keep it." });
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -122,20 +134,56 @@ export default function ProfilePage() {
     setFeedback(null);
 
     try {
-      const updates: Partial<Pick<FormState, "name" | "email" | "avatarUrl" | "bio" | "password">> = {
+      const initialAvatar = pendingAvatarFile
+        ? avatarPreviewUrl ?? formState.avatarUrl ?? DEFAULT_AVATAR
+        : formState.avatarUrl || avatarPreviewUrl || DEFAULT_AVATAR;
+      const payload: Partial<Pick<FormState, "name" | "email" | "avatarUrl" | "bio" | "password">> = {
         name: formState.name,
         email: formState.email,
-        avatarUrl: formState.avatarUrl || DEFAULT_AVATAR,
+        avatarUrl: initialAvatar,
         bio: formState.bio,
       };
 
       if (formState.password.trim()) {
-        updates.password = formState.password;
+        payload.password = formState.password;
       }
 
-      updateProfile({
-        ...updates,
+      let finalAvatarUrl = payload.avatarUrl;
+      if (pendingAvatarFile) {
+        try {
+          const uploaded = await uploadMedia(pendingAvatarFile);
+          console.log('Upload completed', uploaded);
+          finalAvatarUrl = uploaded;
+          handleAvatarUrlChange(uploaded);
+          setPendingAvatarFile(null);
+        } catch (uploadError) {
+          console.error(uploadError);
+          setFeedback({ type: "error", message: "We couldn't upload the image. Try again." });
+          setIsSaving(false);
+          return;
+        } finally {
+          if (avatarPreviewUrl) {
+            URL.revokeObjectURL(avatarPreviewUrl);
+            setAvatarPreviewUrl(null);
+          }
+        }
+      }
+
+      console.log('Submitting profile update', {
+        ...payload,
+        avatarUrl: finalAvatarUrl,
+        hasPendingFile: Boolean(pendingAvatarFile),
       });
+
+      const success = await updateProfile({
+        ...payload,
+        avatarUrl: finalAvatarUrl,
+      });
+
+      if (!success) {
+        throw new Error("Profile update failed");
+      }
+
       setFeedback({ type: "success", message: "Profile updated successfully." });
       setFormState((previous) =>
         previous
@@ -178,30 +226,23 @@ export default function ProfilePage() {
                 <div className="text-center">
                   <div className="mx-auto rounded-circle overflow-hidden border" style={{ width: 160, height: 160 }}>
                     <Image
-                      src={formState.avatarUrl || DEFAULT_AVATAR}
+                      src={currentAvatarSrc}
                       alt={formState.name || "Profile avatar"}
                       width={160}
                       height={160}
                       priority
+                      unoptimized
                       className="object-fit-cover w-100 h-100"
                     />
                   </div>
                   <p className="text-secondary small mt-3 mb-0">Recommended: square image, at least 160px.</p>
                 </div>
 
-                <div className="d-flex flex-column gap-2">
-                  <label htmlFor="avatarUrl" className="form-label fw-semibold mb-1">
-                    Avatar URL
-                  </label>
-                  <input
-                    id="avatarUrl"
-                    type="url"
-                    inputMode="url"
-                    className="form-control"
-                    placeholder="https://i.pravatar.cc/300?u=you"
-                    value={formState.avatarUrl}
-                    onChange={handleChange}
-                  />
+                <div className="d-flex flex-column gap-3">
+                  <p className="text-secondary small mb-0">
+                    Upload a photo from your device or pick one of the presets below. The exact link to the uploaded image is
+                    stored securely on the server.
+                  </p>
                   <div>
                     <label htmlFor="avatarUpload" className="btn btn-sm btn-outline-primary w-100">
                       Upload image

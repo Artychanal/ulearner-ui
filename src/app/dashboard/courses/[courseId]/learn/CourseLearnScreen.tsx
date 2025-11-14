@@ -106,13 +106,13 @@ export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) 
     setActiveItemId(itemId);
   };
 
-  const handleMarkComplete = (itemId: string, extras?: Partial<{ quizAttempts: QuizAttempt[] }>) => {
+  const handleMarkComplete = async (itemId: string, extras?: Partial<{ quizAttempts: QuizAttempt[] }>) => {
     const updatedCompleted = new Set(enrollment.completedLessons);
     updatedCompleted.add(itemId);
     const completeCount = updatedCompleted.size;
     const progress = Math.min(100, Math.round((completeCount / totalItems) * 100));
 
-    updateProgress({
+    await updateProgress({
       ...enrollment,
       ...extras,
       completedLessons: Array.from(updatedCompleted),
@@ -137,7 +137,7 @@ export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) 
       updatedAttempts.push(attemptPayload);
     }
 
-    handleMarkComplete(quizId, { quizAttempts: updatedAttempts });
+    void handleMarkComplete(quizId, { quizAttempts: updatedAttempts });
   };
 
   const renderContent = (item: CourseContentItem | undefined) => {
@@ -295,7 +295,7 @@ export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) 
                       }
 
                       return (
-                        <button type="button" className="btn btn-primary" onClick={() => handleMarkComplete(activeItem.id)}>
+                        <button type="button" className="btn btn-primary" onClick={() => void handleMarkComplete(activeItem.id)}>
                           Mark as completed
                         </button>
                       );

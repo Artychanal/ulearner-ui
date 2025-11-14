@@ -4,6 +4,7 @@ import type {
 } from "@/types/course";
 
 export type FavoriteCourse = {
+  id?: string;
   courseId: number | string;
   origin: "catalog" | "authored";
   addedAt: string;

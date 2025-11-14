@@ -17,4 +17,8 @@ export class CreateLessonDto {
   @IsInt()
   @Min(1)
   readonly position?: number;
+
+  @IsOptional()
+  @IsString()
+  readonly videoUrl?: string;
 }

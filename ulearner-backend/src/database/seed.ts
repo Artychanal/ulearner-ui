@@ -3,6 +3,11 @@ import { InstructorEntity } from '../instructors/entities/instructor.entity';
 import { CourseEntity } from '../courses/entities/course.entity';
 import { LessonEntity } from '../lessons/entities/lesson.entity';
 import { TestimonialEntity } from '../testimonials/entities/testimonial.entity';
+import { UserEntity } from '../users/entities/user.entity';
+import { EnrollmentEntity } from '../enrollments/entities/enrollment.entity';
+import { FavoriteEntity } from '../favorites/entities/favorite.entity';
+import { RefreshTokenEntity } from '../auth/entities/refresh-token.entity';
+import * as bcrypt from 'bcrypt';
 
 const instructorSeed = [
   {
@@ -170,17 +175,42 @@ const testimonialSeed = [
   },
 ];
 
+const userSeed = [
+  {
+    name: 'Taylor Learner',
+    email: 'learner@example.com',
+    password: 'password123',
+    avatarUrl: 'https://www.gravatar.com/avatar/?d=mp',
+    bio: 'Frontend developer focused on crafting delightful learning experiences.',
+  },
+  {
+    name: 'Jordan Mentor',
+    email: 'mentor@example.com',
+    password: 'mentor123',
+    avatarUrl: 'https://www.gravatar.com/avatar/?d=identicon',
+    bio: 'Mentor helping learners transition into tech.',
+  },
+];
+
 async function seed() {
   await AppDataSource.initialize();
   const instructorRepository = AppDataSource.getRepository(InstructorEntity);
   const courseRepository = AppDataSource.getRepository(CourseEntity);
   const lessonRepository = AppDataSource.getRepository(LessonEntity);
   const testimonialRepository = AppDataSource.getRepository(TestimonialEntity);
+  const userRepository = AppDataSource.getRepository(UserEntity);
+  const enrollmentRepository = AppDataSource.getRepository(EnrollmentEntity);
+  const favoriteRepository = AppDataSource.getRepository(FavoriteEntity);
+  const refreshRepository = AppDataSource.getRepository(RefreshTokenEntity);
 
+  await refreshRepository.createQueryBuilder().delete().execute();
+  await favoriteRepository.createQueryBuilder().delete().execute();
+  await enrollmentRepository.createQueryBuilder().delete().execute();
   await testimonialRepository.createQueryBuilder().delete().execute();
   await lessonRepository.createQueryBuilder().delete().execute();
   await courseRepository.createQueryBuilder().delete().execute();
   await instructorRepository.createQueryBuilder().delete().execute();
+  await userRepository.createQueryBuilder().delete().execute();
 
   const instructors = await instructorRepository.save(
     instructorSeed.map((data) => instructorRepository.create(data)),
@@ -218,6 +248,46 @@ async function seed() {
         course: courseByTitle[testimonial.courseTitle],
       }),
     ),
+  );
+
+  const users = await Promise.all(
+    userSeed.map(async (user) => {
+      const passwordHash = await bcrypt.hash(user.password, 10);
+      return userRepository.save(
+        userRepository.create({
+          name: user.name,
+          email: user.email.toLowerCase(),
+          passwordHash,
+          avatarUrl: user.avatarUrl,
+          bio: user.bio,
+          roles: ['student'],
+        }),
+      );
+    }),
+  );
+
+  const usersByEmail = Object.fromEntries(users.map((user) => [user.email, user]));
+
+  const sampleCourse = courseByTitle['Introduction to Next.js'];
+  const sampleCompleted = sampleCourse?.lessons.slice(0, 2).map((lesson) => lesson.id) ?? [];
+
+  await enrollmentRepository.save(
+    enrollmentRepository.create({
+      user: usersByEmail['learner@example.com'],
+      course: sampleCourse,
+      progress: 62,
+      completedLessons: sampleCompleted,
+      quizAttempts: [],
+      origin: 'catalog',
+    }),
+  );
+
+  await favoriteRepository.save(
+    favoriteRepository.create({
+      user: usersByEmail['learner@example.com'],
+      course: courseByTitle['Advanced TypeScript'],
+      origin: 'catalog',
+    }),
   );
 
   console.log('✅ Database seeded with demo data');

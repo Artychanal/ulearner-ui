@@ -10,6 +10,7 @@ function normalizeLessons(course: CatalogCourse): Lesson[] {
       title: lesson.title,
       duration: formatMinutes(lesson.durationMinutes),
       durationMinutes: lesson.durationMinutes,
+      videoUrl: lesson.videoUrl ?? undefined,
     }));
 }
 

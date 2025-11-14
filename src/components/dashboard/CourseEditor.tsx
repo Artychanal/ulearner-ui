@@ -39,6 +39,7 @@ export default function CourseEditor({
   submitLabel = "Save course",
 }: CourseEditorProps) {
   const [course, setCourse] = useState<CourseEditorValues>(initialCourse ?? defaultCourse());
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (initialCourse) {
@@ -161,9 +162,14 @@ export default function CourseEditor({
     }));
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    onSave(course);
+    try {
+      setIsSaving(true);
+      await onSave(course);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -418,12 +424,12 @@ export default function CourseEditor({
 
       <div className="d-flex justify-content-end gap-3">
         {onCancel && (
-          <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>
+          <button type="button" className="btn btn-outline-secondary" onClick={onCancel} disabled={isSaving}>
             Cancel
           </button>
         )}
-        <button type="submit" className="btn btn-primary">
-          {submitLabel}
+        <button type="submit" className="btn btn-primary" disabled={isSaving}>
+          {isSaving ? "Saving…" : submitLabel}
         </button>
       </div>
     </form>

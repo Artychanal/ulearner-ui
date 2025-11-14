@@ -16,6 +16,7 @@ export type CatalogLesson = {
   title: string;
   durationMinutes: number;
   position: number;
+  videoUrl?: string;
   createdAt?: string;
   updatedAt?: string;
 };

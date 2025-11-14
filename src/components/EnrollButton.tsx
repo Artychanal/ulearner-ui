@@ -14,7 +14,7 @@ export default function EnrollButton({ courseId, className }: EnrollButtonProps)
   const { authState, joinCourse } = useAuth();
   const [isJoining, setIsJoining] = useState(false);
 
-  const handleClick = () => {
+  const handleClick = async () => {
     if (authState.status === "unauthenticated") {
       router.push(`/login?next=/courses/${courseId}`);
       return;
@@ -34,15 +34,22 @@ export default function EnrollButton({ courseId, className }: EnrollButtonProps)
     }
 
     setIsJoining(true);
-    joinCourse(courseId);
+    const joined = await joinCourse(courseId);
     setIsJoining(false);
-    router.push(`/dashboard/courses/${courseId}/learn`);
+
+    if (joined) {
+      router.push(`/dashboard/courses/${courseId}/learn`);
+    }
   };
 
   return (
-    <button type="button" className={className ?? "btn btn-primary"} onClick={handleClick} disabled={isJoining}>
+    <button
+      type="button"
+      className={className ?? "btn btn-primary"}
+      onClick={() => void handleClick()}
+      disabled={isJoining}
+    >
       {isJoining ? "Joining..." : "Join this course"}
     </button>
   );
 }
-

@@ -6,6 +6,12 @@ import { validationSchema } from './config/validation';
 import { CoursesModule } from './courses/courses.module';
 import { InstructorsModule } from './instructors/instructors.module';
 import { TestimonialsModule } from './testimonials/testimonials.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { EnrollmentsModule } from './enrollments/enrollments.module';
+import { FavoritesModule } from './favorites/favorites.module';
+import { MediaModule } from './media/media.module';
+import { AuthoredCoursesModule } from './authored-courses/authored-courses.module';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 
 @Module({
@@ -34,6 +40,12 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
     InstructorsModule,
     CoursesModule,
     TestimonialsModule,
+    UsersModule,
+    AuthModule,
+    EnrollmentsModule,
+    FavoritesModule,
+    MediaModule,
+    AuthoredCoursesModule,
   ],
 })
 export class AppModule implements NestModule {

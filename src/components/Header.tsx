@@ -154,6 +154,7 @@ const Header = () => {
                         width={32}
                         height={32}
                         className="rounded-pill border"
+                        unoptimized
                       />
                       <span className="small fw-semibold text-secondary">{authState.user.name}</span>
                     </Link>

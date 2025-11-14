@@ -9,6 +9,11 @@ type ApiResponse<T> = {
   message?: string;
 };
 
+export type ApiError = Error & {
+  status?: number;
+  payload?: unknown;
+};
+
 function resolveApiBaseUrl() {
   const base =
     process.env.NEXT_PUBLIC_API_BASE_URL ??
@@ -54,8 +59,21 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   });
 
   if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Request failed with status ${response.status}`);
+    const text = await response.text();
+    let parsed: unknown;
+    try {
+      parsed = text ? JSON.parse(text) : undefined;
+    } catch {
+      parsed = text;
+    }
+
+    const error: ApiError = new Error(
+      (parsed as Record<string, unknown>)?.message?.toString() ??
+        (typeof text === 'string' && text.length > 0 ? text : `Request failed with status ${response.status}`),
+    );
+    error.status = response.status;
+    error.payload = parsed;
+    throw error;
   }
 
   if (response.status === 204) {

@@ -106,14 +106,14 @@ export default function FavoriteButton({
     }, 5000);
   }, [clearUndoTimers]);
 
-  const handleUndo = useCallback(() => {
+  const handleUndo = useCallback(async () => {
     if (authState.status !== "authenticated") {
       setUndoState(null);
       clearUndoTimers();
       return;
     }
 
-    toggleFavorite(courseId, origin);
+    await toggleFavorite(courseId, origin);
     setUndoState(null);
     clearUndoTimers();
   }, [authState.status, clearUndoTimers, courseId, origin, toggleFavorite]);
@@ -123,7 +123,7 @@ export default function FavoriteButton({
     clearUndoTimers();
   }, [clearUndoTimers]);
 
-  const handleClick = () => {
+  const handleClick = async () => {
     if (authState.status === "loading") {
       return;
     }
@@ -140,13 +140,13 @@ export default function FavoriteButton({
         return;
       }
 
-      toggleFavorite(courseId, origin);
+      await toggleFavorite(courseId, origin);
       beginUndoCountdown();
       return;
     }
 
     handleCloseUndo();
-    toggleFavorite(courseId, origin);
+    await toggleFavorite(courseId, origin);
   };
 
   const label = isFavorite ? "Remove from favorites" : "Add to favorites";
@@ -176,7 +176,7 @@ export default function FavoriteButton({
           .filter(Boolean)
           .join(" ")
           .trim()}
-        onClick={handleClick}
+        onClick={() => void handleClick()}
         aria-pressed={isFavorite}
         aria-label={label}
         title={label}
@@ -195,7 +195,7 @@ export default function FavoriteButton({
                     <p className="mb-0 text-secondary small">Undo within {undoState.remaining} sec</p>
                   </div>
                   <div className="d-flex align-items-center gap-2">
-                    <button type="button" className="btn btn-sm btn-outline-primary" onClick={handleUndo}>
+                    <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => void handleUndo()}>
                       Undo
                     </button>
                     <button

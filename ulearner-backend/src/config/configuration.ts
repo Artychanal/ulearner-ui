@@ -7,6 +7,16 @@ const configuration = () => ({
       .map((origin) => origin.trim())
       .filter(Boolean),
   },
+  auth: {
+    jwtSecret: process.env.JWT_SECRET ?? 'ultra-secret-key',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
+    refreshSecret: process.env.JWT_REFRESH_SECRET ?? 'ultra-refresh-secret',
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
+  },
+  media: {
+    baseUrl: process.env.MEDIA_BASE_URL ?? `http://localhost:${process.env.PORT ?? '3001'}`,
+    uploadDir: process.env.MEDIA_UPLOAD_DIR ?? 'uploads/media',
+  },
   database: {
     host: process.env.POSTGRES_HOST ?? 'localhost',
     port: parseInt(process.env.POSTGRES_PORT ?? '5432', 10),

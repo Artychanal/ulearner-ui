@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { InstructorEntity } from '../../instructors/entities/instructor.entity';
 import { LessonEntity } from '../../lessons/entities/lesson.entity';
+import { UserEntity } from '../../users/entities/user.entity';
 
 @Entity({ name: 'courses' })
 export class CourseEntity {
@@ -41,6 +42,9 @@ export class CourseEntity {
   @Column({ name: 'image_url', nullable: true })
   imageUrl?: string;
 
+  @Column({ name: 'is_published', default: true })
+  isPublished!: boolean;
+
   @ManyToOne(() => InstructorEntity, (instructor) => instructor.courses, {
     nullable: false,
     eager: true,
@@ -53,6 +57,13 @@ export class CourseEntity {
     eager: true,
   })
   lessons!: LessonEntity[];
+
+  @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'owner_id' })
+  owner?: UserEntity;
+
+  @Column({ name: 'editor_modules', type: 'jsonb', nullable: true })
+  editorModules?: unknown;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

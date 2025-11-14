@@ -3,6 +3,7 @@ export type Lesson = {
   title: string;
   duration: string;
   durationMinutes?: number;
+  videoUrl?: string;
 };
 
 export type CourseSummary = {
@@ -82,6 +83,7 @@ export type AuthoredCourse = {
 
 export type EnrolledCourseProgress = {
   courseId: number | string;
+  enrollmentId?: string;
   progress: number;
   completedLessons: string[];
   quizAttempts: QuizAttempt[];

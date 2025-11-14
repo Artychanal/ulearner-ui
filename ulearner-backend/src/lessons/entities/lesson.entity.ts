@@ -20,6 +20,9 @@ export class LessonEntity {
   @Column({ name: 'duration_minutes', type: 'int', default: 10 })
   durationMinutes!: number;
 
+  @Column({ name: 'video_url', nullable: true })
+  videoUrl?: string;
+
   @Column({ type: 'int', default: 1 })
   position!: number;
 

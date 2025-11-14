@@ -7,6 +7,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import { fetchCatalogCourse } from "@/lib/catalog-service";
 import { adaptCatalogCourse } from "@/lib/catalog-adapter";
 import type { CourseSummary } from "@/types/course";
+import type { ApiError } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,11 @@ async function loadCourse(courseId: string): Promise<CourseSummary | null> {
     const course = await fetchCatalogCourse(courseId);
     return adaptCatalogCourse(course);
   } catch (error) {
-    console.error("Failed to load course", error);
+    const isNotFound =
+      typeof error === "object" && error !== null && (error as ApiError).status === 404;
+    if (!isNotFound) {
+      console.error("Failed to load course", error);
+    }
     return null;
   }
 }
