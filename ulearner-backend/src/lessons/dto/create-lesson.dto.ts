@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 
 export class CreateLessonDto {
   @IsString()
@@ -21,4 +21,8 @@ export class CreateLessonDto {
   @IsOptional()
   @IsString()
   readonly videoUrl?: string;
+
+  @IsOptional()
+  @IsUUID()
+  readonly videoMediaId?: string;
 }

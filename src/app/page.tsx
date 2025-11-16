@@ -247,7 +247,7 @@ export default async function Home() {
           </Link>
         </div>
         <div className="row g-4 mt-1">
-          {instructors.map((instructor) => (
+          {instructors.slice(0, 6).map((instructor) => (
             <div key={instructor.id} className="col-md-6 col-lg-4">
               <InstructorCard instructor={instructor} />
             </div>

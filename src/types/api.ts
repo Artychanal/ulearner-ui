@@ -25,6 +25,7 @@ export type EnrollmentApi = {
   lastAccessed: string;
   origin: 'catalog' | 'authored';
   course: CatalogCourse;
+  certificate?: CertificateApi | null;
 };
 
 export type FavoriteApi = {
@@ -46,4 +47,15 @@ export type ApiAuthoredCourse = {
   modules: unknown;
   createdAt: string;
   updatedAt: string;
+};
+
+export type CertificateApi = {
+  id: string;
+  certificateNumber: string;
+  courseTitle: string;
+  instructorName: string;
+  recipientName: string;
+  courseDurationMinutes: number;
+  platformSignature: string;
+  issuedAt: string;
 };

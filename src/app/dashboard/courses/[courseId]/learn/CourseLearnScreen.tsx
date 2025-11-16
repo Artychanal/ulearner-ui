@@ -1,11 +1,14 @@
 'use client';
 
+import Link from "next/link";
 import { startTransition, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import QuizRunner from "@/components/learn/QuizRunner";
+import CourseReviewPanel from "@/components/learn/CourseReviewPanel";
 import type { CourseContentItem, CourseModule, QuizAttempt } from "@/types/course";
 import { buildModulesFromLessons } from "@/lib/course-content";
+import { getApiBaseUrl } from "@/lib/api";
 
 type CourseLearnScreenProps = {
   courseId: string;
@@ -13,6 +16,17 @@ type CourseLearnScreenProps = {
 
 function flattenItems(modules: CourseModule[]) {
   return modules.reduce<CourseContentItem[]>((acc, module) => acc.concat(module.items), []);
+}
+
+const QUIZ_PASSING_PERCENTAGE = 80;
+
+function formatCertificateHours(minutes: number | undefined) {
+  if (!minutes || minutes <= 0) {
+    return "1";
+  }
+  const hours = minutes / 60;
+  const rounded = Math.max(1, Number(hours.toFixed(1)));
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1);
 }
 
 export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) {
@@ -58,7 +72,9 @@ export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) 
         title: summary.title,
         description: summary.description,
         instructor: summary.instructor,
-        modules: buildModulesFromLessons(summary),
+        modules: summary.modules && summary.modules.length > 0
+          ? summary.modules
+          : buildModulesFromLessons(summary),
         origin: "catalog" as const,
       };
     }
@@ -100,6 +116,7 @@ export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) 
   const activeItem = activeModule?.items.find((item) => item.id === activeItemId) ?? activeModule?.items[0];
   const completedSet = new Set(enrollment.completedLessons);
   const totalItems = flattenItems(modules).length || 1;
+  const canReview = enrollment.progress >= 100;
 
   const handleSelectItem = (moduleId: string, itemId: string) => {
     setActiveModuleId(moduleId);
@@ -137,7 +154,18 @@ export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) 
       updatedAttempts.push(attemptPayload);
     }
 
-    void handleMarkComplete(quizId, { quizAttempts: updatedAttempts });
+    const totalPoints = submission.totalPoints || 0;
+    const percentage = totalPoints > 0 ? Math.round((submission.scoredPoints / totalPoints) * 100) : 0;
+    if (percentage >= QUIZ_PASSING_PERCENTAGE) {
+      void handleMarkComplete(quizId, { quizAttempts: updatedAttempts });
+    } else {
+      void updateProgress({
+        ...enrollment,
+        quizAttempts: updatedAttempts,
+        completedLessons: enrollment.completedLessons,
+        progress: enrollment.progress,
+      });
+    }
   };
 
   const renderContent = (item: CourseContentItem | undefined) => {
@@ -154,20 +182,39 @@ export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) 
           </article>
         );
       case "video":
-        return (
-          <div className="d-flex flex-column gap-3">
-            <h2 className="h4 fw-semibold">{item.title}</h2>
-            <div className="ratio ratio-16x9 rounded-4 overflow-hidden">
-              <iframe
-                src={item.url}
-                title={item.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+        {
+          const isSelfHosted =
+            Boolean(item.mediaId) ||
+            (typeof item.url === "string" && /\/api\/v1\/media\//.test(item.url));
+          if (!item.url) {
+            return (
+              <div className="d-flex flex-column gap-3">
+                <h2 className="h4 fw-semibold">{item.title}</h2>
+                <p className="text-secondary">Video is not available for this lesson.</p>
+              </div>
+            );
+          }
+          return (
+            <div className="d-flex flex-column gap-3">
+              <h2 className="h4 fw-semibold">{item.title}</h2>
+              <div className="ratio ratio-16x9 rounded-4 overflow-hidden bg-black">
+                {isSelfHosted ? (
+                  <video className="w-100 h-100" controls src={item.url}>
+                    Sorry, your browser does not support embedded videos.
+                  </video>
+                ) : (
+                  <iframe
+                    src={item.url}
+                    title={item.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                )}
+              </div>
+              <span className="text-secondary small">Duration: {item.duration}</span>
             </div>
-            <span className="text-secondary small">Duration: {item.duration}</span>
-          </div>
-        );
+          );
+        }
       case "quiz":
         {
           const attempt = enrollment.quizAttempts.find((candidate) => candidate.quizId === item.id) ?? null;
@@ -227,9 +274,9 @@ export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) 
                               >
                                 <span className="d-flex flex-column align-items-start">
                                   <span>{item.title}</span>
-                                  {item.type === "quiz" && (
+                                  {item.type === "quiz" && quizAttempt && (
                                     <span className="text-secondary small">
-                                      {quizAttempt ? `Результат: ${quizAttempt.scoredPoints}/${quizAttempt.totalPoints}` : "Ще не пройдено"}
+                                      Score: {quizAttempt.scoredPoints}/{quizAttempt.totalPoints}
                                     </span>
                                   )}
                                 </span>
@@ -271,8 +318,8 @@ export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) 
                     <span className="text-secondary small">
                       Module {(() => {
                         const index = modules.findIndex((module) => module.id === activeModule?.id);
-                        return index >= 0 ? index + 1 : "-";
-                      })()} ·{" "}
+                          return index >= 0 ? index + 1 : "-";
+                        })()} ·{" "}
                       Lesson {(() => {
                         if (!activeModule) {
                           return "-";
@@ -284,9 +331,9 @@ export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) 
                     {(() => {
                       if (activeItem.type === "quiz") {
                         return completedSet.has(activeItem.id) ? (
-                          <span className="badge bg-success-subtle text-success">Вікторина пройдена</span>
+                          <span className="badge bg-success-subtle text-success">Quiz completed</span>
                         ) : (
-                          <span className="text-secondary small">Надішли відповіді, щоб зарахувати вікторину</span>
+                          <span className="text-secondary small">Submit answers to complete this quiz</span>
                         );
                       }
 
@@ -305,6 +352,58 @@ export default function CourseLearnScreen({ courseId }: CourseLearnScreenProps) 
               </div>
             </div>
           </div>
+        </div>
+
+        {enrollment.certificate && (
+          <div className="card border-0 shadow-sm mt-4">
+            <div className="card-body p-4 p-lg-5 d-flex flex-column flex-md-row justify-content-between align-items-start gap-4">
+              <div>
+                <p className="text-uppercase text-secondary small mb-1">Certificate unlocked</p>
+                <h2 className="h4 fw-semibold mb-2">Congrats, {enrollment.certificate.recipientName}!</h2>
+                <p className="mb-2">
+                  You have completed <strong>{enrollment.certificate.courseTitle}</strong> by{" "}
+                  <strong>{courseData.instructor}</strong>.
+                </p>
+                <p className="text-secondary mb-2">
+                  Estimated study time: {formatCertificateHours(enrollment.certificate.courseDurationMinutes)} hours.
+                </p>
+                <p className="text-secondary small mb-0">{enrollment.certificate.platformSignature}</p>
+              </div>
+              {(() => {
+                const certificateNumber = enrollment.certificate?.certificateNumber ?? "";
+                const downloadUrl = `${getApiBaseUrl()}/certificates/${certificateNumber}/pdf`;
+                return (
+                  <div className="d-flex flex-column gap-2 align-items-stretch">
+                    <span className="text-secondary small">Certificate #{certificateNumber}</span>
+                    <div className="d-flex flex-column flex-sm-row gap-2">
+                      <Link
+                        href={`/certificates/${certificateNumber}`}
+                        className="btn btn-primary flex-grow-1 text-center"
+                      >
+                        View certificate
+                      </Link>
+                      <a
+                        href={downloadUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-outline-secondary flex-grow-1 text-center"
+                      >
+                        Download PDF
+                      </a>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4">
+          <CourseReviewPanel
+            courseId={courseId}
+            canReview={canReview}
+            currentUserId={authState.user.id}
+          />
         </div>
       </div>
     </section>

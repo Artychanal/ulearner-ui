@@ -45,7 +45,8 @@ export class AuthoredCoursesService {
       throw new NotFoundException('User not found');
     }
 
-    const instructor = await this.ensureInstructor(owner, dto.instructor);
+    const instructorName = this.resolveInstructorName(owner, dto.instructor);
+    const instructor = await this.ensureInstructor(owner, instructorName);
     const lessons = this.buildLessonsFromModules(dto.modules);
 
     const course = this.courseRepository.create({
@@ -63,11 +64,14 @@ export class AuthoredCoursesService {
           title: lesson.title,
           durationMinutes: lesson.durationMinutes,
           position: index + 1,
+          videoUrl: lesson.videoUrl,
+          videoMediaId: lesson.videoMediaId,
         }),
       ),
     });
 
-    return this.courseRepository.save(course);
+    const saved = await this.courseRepository.save(course);
+    return this.findOwnedCourse(ownerId, saved.id);
   }
 
   async update(ownerId: string, courseId: string, dto: UpdateAuthoredCourseDto) {
@@ -96,7 +100,8 @@ export class AuthoredCoursesService {
       if (!owner) {
         throw new NotFoundException('User not found');
       }
-      course.instructor = await this.ensureInstructor(owner, dto.instructor);
+      const instructorName = this.resolveInstructorName(owner, dto.instructor);
+      course.instructor = await this.ensureInstructor(owner, instructorName);
     }
     if (dto.modules !== undefined) {
       course.editorModules = dto.modules;
@@ -108,11 +113,14 @@ export class AuthoredCoursesService {
           durationMinutes: lesson.durationMinutes,
           position: index + 1,
           course,
+          videoUrl: lesson.videoUrl,
+          videoMediaId: lesson.videoMediaId,
         }),
       );
     }
 
-    return this.courseRepository.save(course);
+    await this.courseRepository.save(course);
+    return this.findOwnedCourse(ownerId, courseId);
   }
 
   async remove(ownerId: string, courseId: string) {
@@ -145,17 +153,23 @@ export class AuthoredCoursesService {
   }
 
   private buildLessonsFromModules(modules: CourseModuleDto[] = []) {
-    const lessons: { title: string; durationMinutes: number }[] = [];
+    const lessons: { title: string; durationMinutes: number; videoUrl?: string; videoMediaId?: string }[] = [];
 
     modules.forEach((module) => {
       module.items.forEach((item) => {
         let durationMinutes = 5;
+        let videoUrl: string | undefined;
+        let videoMediaId: string | undefined;
         if (item.type === 'video') {
           durationMinutes = this.parseDuration(item.duration);
+          videoUrl = typeof item.url === 'string' ? item.url : undefined;
+          videoMediaId = typeof item.mediaId === 'string' ? item.mediaId : undefined;
         }
         lessons.push({
           title: `${module.title} — ${item.title}`,
           durationMinutes,
+          videoUrl,
+          videoMediaId,
         });
       });
     });
@@ -183,5 +197,13 @@ export class AuthoredCoursesService {
       return 5;
     }
     return minutes + Math.round(seconds / 60);
+  }
+
+  private resolveInstructorName(owner: UserEntity, requested?: string | null) {
+    const trimmed = requested?.trim();
+    if (!trimmed || trimmed.toLowerCase() === 'you') {
+      return owner.name;
+    }
+    return trimmed;
   }
 }

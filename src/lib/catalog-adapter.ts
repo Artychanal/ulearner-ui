@@ -1,5 +1,5 @@
 import type { CatalogCourse } from '@/types/catalog';
-import type { CourseSummary, Lesson } from '@/types/course';
+import type { CourseSummary, CourseModule, Lesson } from '@/types/course';
 import { formatMinutes } from '@/lib/formatters';
 
 function normalizeLessons(course: CatalogCourse): Lesson[] {
@@ -11,10 +11,14 @@ function normalizeLessons(course: CatalogCourse): Lesson[] {
       duration: formatMinutes(lesson.durationMinutes),
       durationMinutes: lesson.durationMinutes,
       videoUrl: lesson.videoUrl ?? undefined,
+      videoMediaId: lesson.videoMediaId ?? undefined,
     }));
 }
 
 export function adaptCatalogCourse(course: CatalogCourse): CourseSummary {
+  const editorModules = Array.isArray(course.editorModules)
+    ? (course.editorModules as CourseModule[])
+    : undefined;
   return {
     id: course.id,
     title: course.title,
@@ -25,6 +29,7 @@ export function adaptCatalogCourse(course: CatalogCourse): CourseSummary {
     category: course.category,
     imageUrl: course.imageUrl ?? undefined,
     lessons: normalizeLessons(course),
+    modules: editorModules,
   };
 }
 

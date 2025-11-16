@@ -1,8 +1,9 @@
 'use client';
 
-import { startTransition, useEffect, useState } from "react";
+import { ChangeEvent, startTransition, useEffect, useState } from "react";
 import type { AuthoredCourse, CourseContentItem, CourseModule } from "@/types/course";
 import { generateId } from "@/lib/id";
+import { useAuth } from "@/context/AuthContext";
 
 export type CourseEditorValues = Omit<AuthoredCourse, "lastUpdated">;
 
@@ -13,10 +14,22 @@ type CourseEditorProps = {
   submitLabel?: string;
 };
 
-const defaultCourse = (): CourseEditorValues => ({
+type VideoUploadState = {
+  status: "idle" | "uploading" | "success" | "error";
+  error?: string;
+};
+
+type QuizQuestionEditorState = {
+  question: string;
+  points: number;
+  options: string[];
+  answerIndex: number;
+};
+
+const defaultCourse = (instructorName = "You"): CourseEditorValues => ({
   id: generateId("course-draft"),
   title: "Untitled course",
-  instructor: "You",
+  instructor: instructorName,
   description: "",
   price: 0,
   category: "General",
@@ -32,22 +45,95 @@ const defaultCourse = (): CourseEditorValues => ({
   ],
 });
 
+const createQuizQuestion = (overrides?: Partial<QuizQuestionEditorState>) => ({
+  id: generateId("quiz-question"),
+  question: overrides?.question ?? "New question",
+  points: overrides?.points ?? 1,
+  options: overrides?.options ?? ["Option A", "Option B"],
+  answerIndex: overrides?.answerIndex ?? 0,
+});
+
+const normalizeQuizQuestion = (question: QuizQuestionEditorState & { id: string }) => {
+  const options =
+    Array.isArray(question.options) && question.options.length >= 2 ? question.options : ["Option A", "Option B"];
+  const answerIndex =
+    typeof question.answerIndex === "number" && question.answerIndex >= 0 && question.answerIndex < options.length
+      ? question.answerIndex
+      : 0;
+  return {
+    ...question,
+    options,
+    answerIndex,
+    points: typeof question.points === "number" ? question.points : 1,
+  };
+};
+
+function normalizeCourseValues(course: CourseEditorValues): CourseEditorValues {
+  return {
+    ...course,
+    modules: course.modules.map((module) => ({
+      ...module,
+      items: module.items.map((item) => {
+        if (item.type !== "quiz") {
+          return item;
+        }
+        const normalizedQuestions =
+          item.questions && item.questions.length > 0
+            ? item.questions.map((question) => normalizeQuizQuestion(question as QuizQuestionEditorState & { id: string }))
+            : [createQuizQuestion()];
+        const totalPoints =
+          typeof item.totalPoints === "number" && item.totalPoints > 0
+            ? item.totalPoints
+            : normalizedQuestions.reduce((sum, question) => sum + (question.points ?? 0), 0);
+        return {
+          ...item,
+          totalPoints,
+          questions: normalizedQuestions,
+        };
+      }),
+    })),
+  };
+}
+
 export default function CourseEditor({
   initialCourse,
   onSave,
   onCancel,
   submitLabel = "Save course",
 }: CourseEditorProps) {
-  const [course, setCourse] = useState<CourseEditorValues>(initialCourse ?? defaultCourse());
+  const { authState, uploadMedia } = useAuth();
+  const authenticatedName =
+    authState.status === "authenticated" ? authState.user.name : undefined;
+  const resolvedInstructor = initialCourse?.instructor ?? authenticatedName;
+  const [course, setCourse] = useState<CourseEditorValues>(
+    initialCourse ? normalizeCourseValues(initialCourse) : defaultCourse(resolvedInstructor),
+  );
   const [isSaving, setIsSaving] = useState(false);
+  const [videoUploads, setVideoUploads] = useState<Record<string, VideoUploadState>>({});
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialCourse) {
       startTransition(() => {
-        setCourse(initialCourse);
+        setCourse(normalizeCourseValues(initialCourse));
       });
     }
   }, [initialCourse]);
+
+  useEffect(() => {
+    if (!initialCourse && authenticatedName) {
+      setCourse((prev) => {
+        if (prev.instructor && prev.instructor !== "You") {
+          return prev;
+        }
+        return {
+          ...prev,
+          instructor: authenticatedName,
+        };
+      });
+    }
+  }, [authenticatedName, initialCourse]);
 
   const handleFieldChange = (field: keyof CourseEditorValues, value: CourseEditorValues[typeof field]) => {
     setCourse((prev) => ({
@@ -69,6 +155,39 @@ export default function CourseEditor({
       ),
     }));
   };
+
+  const handleCourseImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setImageUploadError(null);
+    try {
+      const media = await uploadMedia(file);
+      setCourse((prev) => ({
+        ...prev,
+        imageUrl: media.url,
+      }));
+    } catch (error) {
+      console.error("Failed to upload course cover", error);
+      setImageUploadError("Не вдалося завантажити обкладинку. Спробуйте ще раз.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleResetCourseImage = () => {
+    setCourse((prev) => ({
+      ...prev,
+      imageUrl: "/course-thumbnails/nextjs.svg",
+    }));
+    setImageUploadError(null);
+  };
+
+  const courseImagePreview = course.imageUrl || "/course-thumbnails/nextjs.svg";
 
   const handleAddModule = () => {
     setCourse((prev) => ({
@@ -108,13 +227,14 @@ export default function CourseEditor({
               title: "New video lesson",
               url: "",
               duration: "00:00",
+              mediaId: undefined,
             }
           : {
               id: generateId("item"),
               type: "quiz",
               title: "New quiz",
               totalPoints: 0,
-              questions: [],
+              questions: [createQuizQuestion()],
             };
 
     setCourse((prev) => ({
@@ -159,6 +279,165 @@ export default function CourseEditor({
             }
           : module,
       ),
+    }));
+  };
+
+  const handleClearVideoSource = (moduleId: string, itemId: string) => {
+    handleItemChange(moduleId, itemId, (current) =>
+      current.type === "video"
+        ? {
+            ...current,
+            url: "",
+            mediaId: undefined,
+          }
+        : current,
+    );
+    setVideoUploads((previous) => ({
+      ...previous,
+      [itemId]: { status: "idle" },
+    }));
+  };
+
+  const handleVideoUploadChange = async (
+    moduleId: string,
+    itemId: string,
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+
+    setVideoUploads((previous) => ({
+      ...previous,
+      [itemId]: { status: "uploading" },
+    }));
+
+    try {
+      const media = await uploadMedia(file);
+      handleItemChange(moduleId, itemId, (current) =>
+        current.type === "video"
+          ? {
+              ...current,
+              url: media.url,
+              mediaId: media.id,
+            }
+          : current,
+      );
+      setVideoUploads((previous) => ({
+        ...previous,
+        [itemId]: { status: "success" },
+      }));
+    } catch (error) {
+      console.error("Failed to upload video", error);
+      setVideoUploads((previous) => ({
+        ...previous,
+        [itemId]: {
+          status: "error",
+          error: "Не вдалося завантажити відео. Спробуйте ще раз.",
+        },
+      }));
+    }
+  };
+
+  const updateQuizItem = (
+    moduleId: string,
+    itemId: string,
+    updater: (quiz: Extract<CourseContentItem, { type: "quiz" }>) => Extract<CourseContentItem, { type: "quiz" }>,
+  ) => {
+    handleItemChange(moduleId, itemId, (current) => {
+      if (current.type !== "quiz") {
+        return current;
+      }
+      return updater(current);
+    });
+  };
+
+  const handleAddQuizQuestion = (moduleId: string, itemId: string) => {
+    updateQuizItem(moduleId, itemId, (quiz) => ({
+      ...quiz,
+      questions: [...quiz.questions, createQuizQuestion()],
+    }));
+  };
+
+  const handleRemoveQuizQuestion = (moduleId: string, itemId: string, questionId: string) => {
+    updateQuizItem(moduleId, itemId, (quiz) => ({
+      ...quiz,
+      questions: quiz.questions.filter((question) => question.id !== questionId),
+    }));
+  };
+
+  const handleQuizQuestionChange = (
+    moduleId: string,
+    itemId: string,
+    questionId: string,
+    updater: (question: QuizQuestionEditorState & { id: string }) => QuizQuestionEditorState & { id: string },
+  ) => {
+    updateQuizItem(moduleId, itemId, (quiz) => ({
+      ...quiz,
+      questions: quiz.questions.map((question) => (question.id === questionId ? updater(question) : question)),
+    }));
+  };
+
+  const handleQuizOptionChange = (
+    moduleId: string,
+    itemId: string,
+    questionId: string,
+    optionIndex: number,
+    value: string,
+  ) => {
+    handleQuizQuestionChange(moduleId, itemId, questionId, (question) => {
+      const options = [...question.options];
+      options[optionIndex] = value;
+      return { ...question, options };
+    });
+  };
+
+  const handleAddQuizOption = (moduleId: string, itemId: string, questionId: string) => {
+    handleQuizQuestionChange(moduleId, itemId, questionId, (question) => ({
+      ...question,
+      options: [...question.options, `Option ${String.fromCharCode(65 + question.options.length)}`],
+    }));
+  };
+
+  const handleRemoveQuizOption = (
+    moduleId: string,
+    itemId: string,
+    questionId: string,
+    optionIndex: number,
+  ) => {
+    handleQuizQuestionChange(moduleId, itemId, questionId, (question) => {
+      if (question.options.length <= 2) {
+        return question;
+      }
+      const options = question.options.filter((_, index) => index !== optionIndex);
+      let answerIndex = question.answerIndex;
+      if (optionIndex === answerIndex) {
+        answerIndex = 0;
+      } else if (optionIndex < answerIndex) {
+        answerIndex -= 1;
+      }
+      return { ...question, options, answerIndex };
+    });
+  };
+
+  const handleQuizAnswerSelect = (
+    moduleId: string,
+    itemId: string,
+    questionId: string,
+    optionIndex: number,
+  ) => {
+    handleQuizQuestionChange(moduleId, itemId, questionId, (question) => ({
+      ...question,
+      answerIndex: optionIndex,
+    }));
+  };
+
+  const recalcQuizTotalPoints = (moduleId: string, itemId: string) => {
+    updateQuizItem(moduleId, itemId, (quiz) => ({
+      ...quiz,
+      totalPoints: quiz.questions.reduce((sum, question) => sum + (question.points ?? 0), 0),
     }));
   };
 
@@ -214,6 +493,38 @@ export default function CourseEditor({
                 value={course.description}
                 onChange={(event) => handleFieldChange("description", event.target.value)}
               />
+            </div>
+            <div className="col-lg-4">
+              <label className="form-label fw-semibold">Cover image</label>
+              <div className="border rounded-4 overflow-hidden mb-3 bg-light-subtle" style={{ minHeight: "160px" }}>
+                <img src={courseImagePreview} alt="Course cover" className="img-fluid w-100" />
+              </div>
+              <label className="form-label">Image URL</label>
+              <input
+                type="url"
+                className="form-control"
+                value={course.imageUrl}
+                onChange={(event) => handleFieldChange("imageUrl", event.target.value)}
+                placeholder="https://example.com/cover.jpg"
+              />
+              <div className="mt-3">
+                <label className="form-label">Upload cover</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="form-control"
+                  onChange={handleCourseImageUpload}
+                  disabled={isUploadingImage}
+                />
+                <div className="d-flex justify-content-between align-items-center mt-2">
+                  <small className="text-secondary">Use your own cover or leave the default one.</small>
+                  <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleResetCourseImage}>
+                    Reset
+                  </button>
+                </div>
+                {isUploadingImage && <small className="text-primary d-block mt-2">Uploading cover...</small>}
+                {imageUploadError && <small className="text-danger d-block mt-2">{imageUploadError}</small>}
+              </div>
             </div>
             <div className="col-lg-4">
               <label htmlFor="coursePrice" className="form-label fw-semibold">
@@ -365,7 +676,9 @@ export default function CourseEditor({
                                     current.type === "video" ? { ...current, url: event.target.value } : current,
                                   )
                                 }
+                                placeholder="Will be auto-filled after upload"
                               />
+                              <div className="form-text">Paste a link or upload a file below.</div>
                             </div>
                             <div className="col-md-4">
                               <label className="form-label">Duration (mm:ss)</label>
@@ -380,35 +693,201 @@ export default function CourseEditor({
                                 }
                               />
                             </div>
+                            <div className="col-12">
+                              <label className="form-label">Upload video file</label>
+                              <input
+                                type="file"
+                                accept="video/*"
+                                className="form-control"
+                                onChange={(event) => handleVideoUploadChange(module.id, item.id, event)}
+                                disabled={videoUploads[item.id]?.status === "uploading"}
+                              />
+                              <div className="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between mt-2 gap-2">
+                                <small className="text-secondary">
+                                  {item.mediaId
+                                    ? "Uploaded video is linked to this lesson."
+                                    : "Upload your own video or keep using an external link."}
+                                </small>
+                                {(item.mediaId || item.url) && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-secondary"
+                                    onClick={() => handleClearVideoSource(module.id, item.id)}
+                                  >
+                                    Clear video
+                                  </button>
+                                )}
+                              </div>
+                              {videoUploads[item.id]?.status === "uploading" && (
+                                <small className="text-primary d-block mt-2">Uploading video...</small>
+                              )}
+                              {videoUploads[item.id]?.status === "success" && (
+                                <small className="text-success d-block mt-2">
+                                  Video uploaded successfully. URL updated automatically.
+                                </small>
+                              )}
+                              {videoUploads[item.id]?.status === "error" && (
+                                <small className="text-danger d-block mt-2">
+                                  {videoUploads[item.id]?.error ?? "We couldn't upload this video. Try again."}
+                                </small>
+                              )}
+                            </div>
                           </div>
                         )}
                         {item.type === "quiz" && (
-                          <div className="row g-3">
-                            <div className="col-md-4">
-                              <label className="form-label">Total points</label>
-                              <input
-                                type="number"
-                                min={0}
-                                className="form-control"
-                                value={item.totalPoints}
-                                onChange={(event) =>
-                                  handleItemChange(module.id, item.id, (current) =>
-                                    current.type === "quiz"
-                                      ? { ...current, totalPoints: Number(event.target.value) }
-                                      : current,
-                                  )
-                                }
-                              />
+                          <div className="d-flex flex-column gap-4">
+                            <div className="row g-3 align-items-end">
+                              <div className="col-md-4">
+                                <label className="form-label">Total points</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  className="form-control"
+                                  value={item.totalPoints}
+                                  onChange={(event) =>
+                                    handleItemChange(module.id, item.id, (current) =>
+                                      current.type === "quiz"
+                                        ? { ...current, totalPoints: Number(event.target.value) }
+                                        : current,
+                                    )
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-outline-secondary mt-2"
+                                  onClick={() => recalcQuizTotalPoints(module.id, item.id)}
+                                >
+                                  Recalculate from questions
+                                </button>
+                              </div>
+                              <div className="col-md-8">
+                                <label className="form-label">Quiz overview</label>
+                                <div className="p-3 border rounded-3 bg-light-subtle">
+                                  <p className="mb-1 fw-semibold">Questions: {item.questions.length}</p>
+                                  <p className="mb-0 text-secondary small">
+                                    Number of points for the question:{" "}
+                                    {item.questions.reduce((sum, question) => sum + (question.points ?? 0), 0)}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                            <div className="col-md-8">
-                              <label className="form-label">Questions summary</label>
-                              <textarea
-                                className="form-control"
-                                rows={3}
-                                value={item.questions.map((question) => `• ${question.question} (${question.points} pts)`).join("\n")}
-                                readOnly
-                                placeholder="Add questions via the quiz builder (coming soon)"
-                              />
+                            <div>
+                              <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h4 className="h6 fw-semibold mb-0">Questions</h4>
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-outline-primary"
+                                  onClick={() => handleAddQuizQuestion(module.id, item.id)}
+                                >
+                                  Add question
+                                </button>
+                              </div>
+                              {item.questions.length === 0 ? (
+                                <p className="text-secondary small mb-0">
+                                  Немає питань. Додайте перше питання кнопкою вище.
+                                </p>
+                              ) : (
+                                <div className="d-flex flex-column gap-3">
+                                  {item.questions.map((question, questionIndex) => (
+                                    <div key={question.id ?? `quiz-question-${questionIndex}`} className="border rounded-4 p-3 bg-light-subtle">
+                                      <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <span className="fw-semibold">Question {questionIndex + 1}</span>
+                                        <button
+                                          type="button"
+                                          className="btn btn-sm btn-outline-danger"
+                                          onClick={() => handleRemoveQuizQuestion(module.id, item.id, question.id)}
+                                          disabled={item.questions.length === 1}
+                                        >
+                                          Remove
+                                        </button>
+                                      </div>
+                                      <div className="mb-3">
+                                      <label className="form-label">Question text</label>
+                                      <input
+                                        type="text"
+                                        className="form-control"
+                                        value={question.question ?? ""}
+                                          onChange={(event) =>
+                                            handleQuizQuestionChange(module.id, item.id, question.id, (current) => ({
+                                              ...current,
+                                              question: event.target.value,
+                                            }))
+                                          }
+                                        />
+                                      </div>
+                                      <div className="row g-3 mb-3">
+                                        <div className="col-md-4">
+                                          <label className="form-label">Points</label>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            className="form-control"
+                                            value={question.points ?? 0}
+                                            onChange={(event) =>
+                                              handleQuizQuestionChange(module.id, item.id, question.id, (current) => ({
+                                                ...current,
+                                                points: Number(event.target.value),
+                                              }))
+                                            }
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="d-flex flex-column gap-2">
+                                        <label className="form-label mb-1">Answer options</label>
+                                        {(question.options ?? ["Option A", "Option B"]).map((option = "", optionIndex) => (
+                                          <div className="input-group" key={`${question.id}-${optionIndex}`}>
+                                            <span className="input-group-text">
+                                              <input
+                                                type="radio"
+                                                name={`${question.id}-answer`}
+                                                checked={question.answerIndex === optionIndex}
+                                                onChange={() =>
+                                                  handleQuizAnswerSelect(module.id, item.id, question.id, optionIndex)
+                                                }
+                                                aria-label="Mark as correct answer"
+                                              />
+                                            </span>
+                                            <input
+                                              type="text"
+                                              className="form-control"
+                                              value={option}
+                                              onChange={(event) =>
+                                                handleQuizOptionChange(
+                                                  module.id,
+                                                  item.id,
+                                                  question.id,
+                                                  optionIndex,
+                                                  event.target.value,
+                                                )
+                                              }
+                                            />
+                                            <button
+                                              type="button"
+                                              className="btn btn-outline-danger"
+                                              disabled={question.options.length <= 2}
+                                              onClick={() =>
+                                                handleRemoveQuizOption(module.id, item.id, question.id, optionIndex)
+                                              }
+                                            >
+                                              ✕
+                                            </button>
+                                          </div>
+                                        ))}
+                                        <div className="d-flex justify-content-between align-items-center">
+                                          <small className="text-secondary">Mark the correct answer with the radio button.</small>
+                                          <button
+                                            type="button"
+                                            className="btn btn-sm btn-outline-secondary"
+                                            onClick={() => handleAddQuizOption(module.id, item.id, question.id)}
+                                          >
+                                            Add option
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}

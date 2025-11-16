@@ -4,6 +4,7 @@ export type Lesson = {
   duration: string;
   durationMinutes?: number;
   videoUrl?: string;
+  videoMediaId?: string;
 };
 
 export type CourseSummary = {
@@ -16,6 +17,7 @@ export type CourseSummary = {
   category: string;
   imageUrl?: string;
   lessons: Lesson[];
+  modules?: CourseModule[];
 };
 
 export type ContentType = "text" | "video" | "quiz";
@@ -35,6 +37,7 @@ export type VideoContent = BaseContent & {
   type: "video";
   url: string;
   duration: string;
+  mediaId?: string;
 };
 
 export type QuizQuestion = {
@@ -59,6 +62,17 @@ export type QuizAttempt = {
   completedAt: string;
 };
 
+export type CourseCertificate = {
+  id: string;
+  certificateNumber: string;
+  courseTitle: string;
+  instructorName: string;
+  recipientName: string;
+  courseDurationMinutes: number;
+  platformSignature: string;
+  issuedAt: string;
+};
+
 export type CourseContentItem = TextContent | VideoContent | QuizContent;
 
 export type CourseModule = {
@@ -66,6 +80,25 @@ export type CourseModule = {
   title: string;
   description?: string;
   items: CourseContentItem[];
+};
+
+export type CourseReview = {
+  id: string;
+  rating: number;
+  comment?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  author: {
+    id: string;
+    name: string;
+    avatarUrl?: string | null;
+  };
+};
+
+export type CourseReviewSummary = {
+  averageRating: number;
+  totalReviews: number;
+  reviews: CourseReview[];
 };
 
 export type AuthoredCourse = {
@@ -89,4 +122,5 @@ export type EnrolledCourseProgress = {
   quizAttempts: QuizAttempt[];
   lastAccessed: string;
   origin?: "catalog" | "authored";
+  certificate?: CourseCertificate | null;
 };

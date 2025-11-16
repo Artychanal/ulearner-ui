@@ -89,8 +89,11 @@ export class CoursesService {
       instructor,
       lessons: dto.lessons.map((lesson, index) =>
         this.lessonRepository.create({
-          ...lesson,
+          title: lesson.title,
+          durationMinutes: lesson.durationMinutes,
           position: lesson.position ?? index + 1,
+          videoUrl: lesson.videoUrl,
+          videoMediaId: lesson.videoMediaId,
         }),
       ),
     });
@@ -111,9 +114,12 @@ export class CoursesService {
       await this.lessonRepository.delete({ course: { id: course.id } });
       course.lessons = lessons.map((lesson, index) =>
         this.lessonRepository.create({
-          ...lesson,
+          title: lesson.title,
+          durationMinutes: lesson.durationMinutes,
           position: lesson.position ?? index + 1,
           course,
+          videoUrl: lesson.videoUrl,
+          videoMediaId: lesson.videoMediaId,
         }),
       );
     }
@@ -130,9 +136,12 @@ export class CoursesService {
   async addLesson(courseId: string, dto: CreateLessonDto) {
     const course = await this.findOne(courseId);
     const lesson = this.lessonRepository.create({
-      ...dto,
+      title: dto.title,
+      durationMinutes: dto.durationMinutes,
       position: dto.position ?? (course.lessons?.length ?? 0) + 1,
       course,
+      videoUrl: dto.videoUrl,
+      videoMediaId: dto.videoMediaId,
     });
     return this.lessonRepository.save(lesson);
   }

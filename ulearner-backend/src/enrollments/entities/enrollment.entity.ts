@@ -4,11 +4,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserEntity } from '../../users/entities/user.entity';
 import { CourseEntity } from '../../courses/entities/course.entity';
+import { CertificateEntity } from '../../certificates/entities/certificate.entity';
 
 @Entity({ name: 'enrollments' })
 export class EnrollmentEntity {
@@ -37,6 +39,13 @@ export class EnrollmentEntity {
 
   @Column({ length: 40, default: 'catalog' })
   origin!: 'catalog' | 'authored';
+
+  @OneToOne(() => CertificateEntity, (certificate) => certificate.enrollment, {
+    cascade: true,
+    nullable: true,
+    eager: true,
+  })
+  certificate?: CertificateEntity | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

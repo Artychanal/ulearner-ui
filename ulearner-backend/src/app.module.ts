@@ -12,6 +12,8 @@ import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { MediaModule } from './media/media.module';
 import { AuthoredCoursesModule } from './authored-courses/authored-courses.module';
+import { CertificatesModule } from './certificates/certificates.module';
+import { CourseReviewsModule } from './course-reviews/course-reviews.module';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 
 @Module({
@@ -46,6 +48,8 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
     FavoritesModule,
     MediaModule,
     AuthoredCoursesModule,
+    CertificatesModule,
+    CourseReviewsModule,
   ],
 })
 export class AppModule implements NestModule {

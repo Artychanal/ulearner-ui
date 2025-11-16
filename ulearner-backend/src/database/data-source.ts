@@ -10,11 +10,16 @@ import { EnrollmentEntity } from '../enrollments/entities/enrollment.entity';
 import { FavoriteEntity } from '../favorites/entities/favorite.entity';
 import { RefreshTokenEntity } from '../auth/entities/refresh-token.entity';
 import { MediaEntity } from '../media/entities/media.entity';
+import { CertificateEntity } from '../certificates/entities/certificate.entity';
+import { CourseReviewEntity } from '../course-reviews/entities/course-review.entity';
 import { CreateCoreTables1700000000001 } from './migrations/1700000000001-CreateCoreTables';
 import { AddUsersAuthTables1700000000002 } from './migrations/1700000000002-AddUsersAuthTables';
 import { CreateMediaTable1700000000003 } from './migrations/1700000000003-CreateMediaTable';
 import { AddMediaStoragePath1700000000004 } from './migrations/1700000000004-AddMediaStoragePath';
 import { AddCourseOwnerAndEditorModules1700000000005 } from './migrations/1700000000005-AddCourseOwnerAndEditorModules';
+import { AddLessonVideoMedia1700000000006 } from './migrations/1700000000006-AddLessonVideoMedia';
+import { CreateCertificatesTable1700000000007 } from './migrations/1700000000007-CreateCertificatesTable';
+import { CreateCourseReviews1700000000008 } from './migrations/1700000000008-CreateCourseReviews';
 
 const config = configuration();
 
@@ -37,6 +42,8 @@ const AppDataSource = new DataSource({
     FavoriteEntity,
     RefreshTokenEntity,
     MediaEntity,
+    CertificateEntity,
+    CourseReviewEntity,
   ],
   migrations: [
     CreateCoreTables1700000000001,
@@ -44,6 +51,9 @@ const AppDataSource = new DataSource({
     CreateMediaTable1700000000003,
     AddMediaStoragePath1700000000004,
     AddCourseOwnerAndEditorModules1700000000005,
+    AddLessonVideoMedia1700000000006,
+    CreateCertificatesTable1700000000007,
+    CreateCourseReviews1700000000008,
   ],
 });
 

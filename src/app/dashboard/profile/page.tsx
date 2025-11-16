@@ -152,9 +152,8 @@ export default function ProfilePage() {
       if (pendingAvatarFile) {
         try {
           const uploaded = await uploadMedia(pendingAvatarFile);
-          console.log('Upload completed', uploaded);
-          finalAvatarUrl = uploaded;
-          handleAvatarUrlChange(uploaded);
+          finalAvatarUrl = uploaded.url;
+          handleAvatarUrlChange(uploaded.url);
           setPendingAvatarFile(null);
         } catch (uploadError) {
           console.error(uploadError);

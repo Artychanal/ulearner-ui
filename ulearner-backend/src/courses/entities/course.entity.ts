@@ -12,6 +12,7 @@ import {
 import { InstructorEntity } from '../../instructors/entities/instructor.entity';
 import { LessonEntity } from '../../lessons/entities/lesson.entity';
 import { UserEntity } from '../../users/entities/user.entity';
+import { CourseReviewEntity } from '../../course-reviews/entities/course-review.entity';
 
 @Entity({ name: 'courses' })
 export class CourseEntity {
@@ -64,6 +65,9 @@ export class CourseEntity {
 
   @Column({ name: 'editor_modules', type: 'jsonb', nullable: true })
   editorModules?: unknown;
+
+  @OneToMany(() => CourseReviewEntity, (review) => review.course)
+  reviews?: CourseReviewEntity[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

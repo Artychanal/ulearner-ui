@@ -1,5 +1,36 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+
+class QuizQuestionDto {
+  @IsString()
+  readonly id!: string;
+
+  @IsString()
+  readonly question!: string;
+
+  @IsInt()
+  @Min(0)
+  readonly points!: number;
+
+  @IsArray()
+  @IsString({ each: true })
+  readonly options!: string[];
+
+  @IsInt()
+  @Min(0)
+  readonly answerIndex!: number;
+}
 
 class CourseContentItemDto {
   @IsString()
@@ -21,10 +52,18 @@ class CourseContentItemDto {
   readonly duration?: string;
 
   @IsOptional()
+  @IsUUID()
+  readonly mediaId?: string;
+
+  @IsOptional()
+  @IsNumber()
   readonly totalPoints?: number;
 
   @IsOptional()
-  readonly questions?: unknown[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => QuizQuestionDto)
+  readonly questions?: QuizQuestionDto[];
 }
 
 export class CourseModuleDto {

@@ -4,9 +4,10 @@ import { EnrollmentsController } from './enrollments.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EnrollmentEntity } from './entities/enrollment.entity';
 import { CourseEntity } from '../courses/entities/course.entity';
+import { CertificatesModule } from '../certificates/certificates.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([EnrollmentEntity, CourseEntity])],
+  imports: [TypeOrmModule.forFeature([EnrollmentEntity, CourseEntity]), CertificatesModule],
   controllers: [EnrollmentsController],
   providers: [EnrollmentsService],
   exports: [EnrollmentsService],

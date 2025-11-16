@@ -17,6 +17,7 @@ export type CatalogLesson = {
   durationMinutes: number;
   position: number;
   videoUrl?: string;
+  videoMediaId?: string;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -30,6 +31,7 @@ export type CatalogCourse = {
   imageUrl?: string;
   instructor: CatalogInstructor;
   lessons: CatalogLesson[];
+  editorModules?: unknown;
   createdAt?: string;
   updatedAt?: string;
 };

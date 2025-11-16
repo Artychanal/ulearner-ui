@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { CatalogInstructor } from "@/types/catalog";
 
@@ -18,8 +17,8 @@ export default function InstructorCard({ instructor }: InstructorCardProps) {
     <div className="instructor-card card h-100 border-0 position-relative overflow-hidden">
       <span className="instructor-card-accent" aria-hidden />
       <div className="card-body text-center d-flex flex-column gap-3">
-        <div className="instructor-avatar-ring mx-auto">
-          <Image src={avatarSrc} alt={instructor.name} width={96} height={96} className="rounded-circle" />
+        <div className="instructor-avatar-ring mx-auto overflow-hidden" style={{ width: "96px", height: "96px" }}>
+          <img src={avatarSrc} alt={instructor.name} className="rounded-circle w-100 h-100 object-fit-cover" />
         </div>
         <span className="badge rounded-pill instructor-pill align-self-center">{primaryDiscipline}</span>
         <h3 className="h5 fw-bold mb-0">{instructor.name}</h3>

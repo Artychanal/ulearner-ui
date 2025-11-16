@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { CourseEntity } from '../../courses/entities/course.entity';
+import { MediaEntity } from '../../media/entities/media.entity';
 
 @Entity({ name: 'lessons' })
 export class LessonEntity {
@@ -22,6 +23,13 @@ export class LessonEntity {
 
   @Column({ name: 'video_url', nullable: true })
   videoUrl?: string;
+
+  @Column({ name: 'video_media_id', type: 'uuid', nullable: true })
+  videoMediaId?: string;
+
+  @ManyToOne(() => MediaEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'video_media_id' })
+  videoMedia?: MediaEntity | null;
 
   @Column({ type: 'int', default: 1 })
   position!: number;

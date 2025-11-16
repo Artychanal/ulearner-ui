@@ -17,6 +17,11 @@ const configuration = () => ({
     baseUrl: process.env.MEDIA_BASE_URL ?? `http://localhost:${process.env.PORT ?? '3001'}`,
     uploadDir: process.env.MEDIA_UPLOAD_DIR ?? 'uploads/media',
   },
+  certificates: {
+    signature:
+      process.env.CERTIFICATE_SIGNATURE ??
+      'Empowering lifelong learners — Officially certified by ULearner',
+  },
   database: {
     host: process.env.POSTGRES_HOST ?? 'localhost',
     port: parseInt(process.env.POSTGRES_PORT ?? '5432', 10),

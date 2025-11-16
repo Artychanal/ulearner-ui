@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { QuizAttempt, QuizContent } from "@/types/course";
+import type { QuizAttempt, QuizContent, QuizQuestion } from "@/types/course";
 
 type SubmitPayload = {
   selectedOptionIndexes: number[];
@@ -15,8 +15,28 @@ type QuizRunnerProps = {
   onSubmit: (payload: SubmitPayload) => void | Promise<void>;
 };
 
+const PASSING_PERCENTAGE = 80;
+
 function buildBlankSelection(length: number) {
   return Array.from({ length }, () => -1);
+}
+
+function normalizeQuestions(questions: QuizQuestion[]): QuizQuestion[] {
+  return questions.map((question) => {
+    const options =
+      Array.isArray(question.options) && question.options.length >= 2
+        ? question.options
+        : ["Option A", "Option B"];
+    const answerIndex =
+      typeof question.answerIndex === "number" && question.answerIndex >= 0 && question.answerIndex < options.length
+        ? question.answerIndex
+        : 0;
+    return {
+      ...question,
+      options,
+      answerIndex,
+    };
+  });
 }
 
 function formatTimestamp(value: string) {
@@ -28,25 +48,51 @@ function formatTimestamp(value: string) {
 }
 
 export default function QuizRunner({ quiz, attempt, onSubmit }: QuizRunnerProps) {
+  const normalizedQuestions = useMemo(() => normalizeQuestions(quiz.questions ?? []), [quiz.questions]);
   const [selections, setSelections] = useState<number[]>(() =>
-    attempt ? [...attempt.selectedOptionIndexes] : buildBlankSelection(quiz.questions.length),
+    attempt ? [...attempt.selectedOptionIndexes] : buildBlankSelection(normalizedQuestions.length),
   );
   const [isEditing, setIsEditing] = useState<boolean>(() => !attempt);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingAttempt, setPendingAttempt] = useState<QuizAttempt | null>(null);
 
   useEffect(() => {
     if (!attempt) {
-      setSelections(buildBlankSelection(quiz.questions.length));
+      setSelections(buildBlankSelection(normalizedQuestions.length));
       setIsEditing(true);
+      setPendingAttempt(null);
       return;
     }
-    setSelections([...attempt.selectedOptionIndexes]);
+    setSelections(() => {
+      const base = buildBlankSelection(normalizedQuestions.length);
+      attempt.selectedOptionIndexes.forEach((value, index) => {
+        if (index < base.length) {
+          base[index] = value;
+        }
+      });
+      return base;
+    });
     setIsEditing(false);
-  }, [attempt, quiz.questions.length]);
+    setPendingAttempt(null);
+  }, [attempt, normalizedQuestions.length]);
 
   const answeredCount = useMemo(() => selections.filter((index) => index >= 0).length, [selections]);
-  const allAnswered = answeredCount === quiz.questions.length;
+  const allAnswered = answeredCount === normalizedQuestions.length;
+  const activeAttempt = attempt ?? pendingAttempt;
+
+  const currentScore = useMemo(() => {
+    if (!activeAttempt) {
+      return null;
+    }
+    const total =
+      activeAttempt.totalPoints || normalizedQuestions.reduce((sum, question) => sum + (question.points ?? 0), 0);
+    return {
+      scored: activeAttempt.scoredPoints,
+      total,
+      percentage: total ? Math.round((activeAttempt.scoredPoints / total) * 100) : 0,
+    };
+  }, [activeAttempt, normalizedQuestions]);
 
   const handleSelect = useCallback(
     (questionIndex: number, optionIndex: number) => {
@@ -62,85 +108,87 @@ export default function QuizRunner({ quiz, attempt, onSubmit }: QuizRunnerProps)
     [isEditing],
   );
 
-  const currentScore = useMemo(() => {
-    if (!attempt) {
-      return null;
-    }
-    return {
-      scored: attempt.scoredPoints,
-      total: attempt.totalPoints,
-      percentage: attempt.totalPoints ? Math.round((attempt.scoredPoints / attempt.totalPoints) * 100) : 0,
-    };
-  }, [attempt]);
-
   const submitAttempt = useCallback(async () => {
     if (!isEditing || isSubmitting) {
       return;
     }
 
     if (!allAnswered) {
-      setErrorMessage("Відповідай на всі питання, перш ніж надсилати вікторину.");
+      setErrorMessage("Answer every question before submitting.");
       return;
     }
 
-    setErrorMessage(null);
-    setIsSubmitting(true);
-    const scoredPoints = quiz.questions.reduce((total, question, index) => {
+    const totalPoints = quiz.totalPoints ?? normalizedQuestions.reduce((total, question) => total + (question.points ?? 0), 0);
+    const scoredPoints = normalizedQuestions.reduce((total, question, index) => {
       const selectedIndex = selections[index];
       return selectedIndex === question.answerIndex ? total + question.points : total;
     }, 0);
+
+    setErrorMessage(null);
+    setIsSubmitting(true);
 
     try {
       await onSubmit({
         selectedOptionIndexes: selections,
         scoredPoints,
-        totalPoints: quiz.totalPoints,
+        totalPoints,
       });
+      setPendingAttempt({
+        quizId: quiz.id,
+        selectedOptionIndexes: selections,
+        scoredPoints,
+        totalPoints,
+        completedAt: new Date().toISOString(),
+      });
+      setIsEditing(false);
     } finally {
       setIsSubmitting(false);
     }
-  }, [allAnswered, isEditing, isSubmitting, onSubmit, quiz.questions, quiz.totalPoints, selections]);
+  }, [allAnswered, isEditing, isSubmitting, normalizedQuestions, onSubmit, quiz.id, quiz.totalPoints, selections]);
 
   const startRetake = useCallback(() => {
-    if (!attempt) {
+    if (!activeAttempt) {
       return;
     }
+    setPendingAttempt(null);
     setIsEditing(true);
     setErrorMessage(null);
-  }, [attempt]);
+  }, [activeAttempt]);
 
   return (
     <div className="d-flex flex-column gap-4">
       <header className="d-flex flex-column gap-2">
         <h2 className="h4 fw-semibold mb-0">{quiz.title}</h2>
-        <p className="text-secondary small mb-0">Вікторина на {quiz.totalPoints} балів</p>
-        {attempt && (
-          <div className={`alert ${currentScore && currentScore.percentage === 100 ? "alert-success" : "alert-info"} mb-0`}>
+        <p className="text-secondary small mb-0">
+          Quiz worth {quiz.totalPoints ?? normalizedQuestions.reduce((sum, question) => sum + (question.points ?? 0), 0)} pts
+        </p>
+        {activeAttempt && currentScore && (
+          <div className={`alert ${currentScore.percentage >= PASSING_PERCENTAGE ? "alert-success" : "alert-info"} mb-0`}>
             <div className="d-flex flex-column flex-md-row justify-content-between gap-2">
               <span>
-                Останній результат: <strong>{attempt.scoredPoints}</strong> з {attempt.totalPoints} балів
-                {currentScore && (
-                  <span className="ms-2 badge bg-primary-subtle text-primary">{currentScore.percentage}%</span>
-                )}
+                Latest score: <strong>{activeAttempt.scoredPoints}</strong> / {activeAttempt.totalPoints} pts
+                <span className="ms-2 badge bg-primary-subtle text-primary">{currentScore.percentage}%</span>
               </span>
-              <span className="text-secondary small">Спроба від {formatTimestamp(attempt.completedAt)}</span>
+              <span className="text-secondary small">
+                {pendingAttempt && !attempt ? "Waiting for confirmation…" : `Submitted on ${formatTimestamp(activeAttempt.completedAt)}`}
+              </span>
             </div>
-            {isEditing && <p className="small text-secondary mb-0 mt-2">Попередній результат збережено. Після надсилання він оновиться.</p>}
+            {isEditing && <p className="small text-secondary mb-0 mt-2">Previous result saved. Submitting will update it.</p>}
           </div>
         )}
       </header>
 
       <div className="d-flex flex-column gap-3">
-        {quiz.questions.map((question, questionIndex) => {
+        {normalizedQuestions.map((question, questionIndex) => {
           const selectedIndex = selections[questionIndex];
           const isAnswered = selectedIndex >= 0;
-          const showFeedback = !isEditing && !!attempt;
+          const showFeedback = !isEditing && !!activeAttempt;
           const isCorrect = showFeedback && selectedIndex === question.answerIndex;
           const questionBadgeClass = isCorrect ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary";
-          const questionBadgeText = showFeedback ? (isCorrect ? "Вірно" : "Невірно") : isAnswered ? "Вибрано" : "Не відповіли";
+          const questionBadgeText = showFeedback ? (isCorrect ? "Correct" : "Needs review") : isAnswered ? "Selected" : "Not answered";
 
           return (
-            <article key={question.id} className="border rounded-4 p-4 d-flex flex-column gap-3">
+            <article key={question.id ?? `question-${questionIndex}`} className="border rounded-4 p-4 d-flex flex-column gap-3">
               <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
                 <div className="d-flex flex-column gap-1">
                   <span className="fw-semibold">{question.question}</span>
@@ -160,16 +208,10 @@ export default function QuizRunner({ quiz, attempt, onSubmit }: QuizRunnerProps)
                     buttonClass = optionSelected
                       ? "btn btn-primary text-start d-flex align-items-center gap-2"
                       : "btn btn-outline-secondary text-start d-flex align-items-center gap-2";
-                  } else if (optionShowFeedback) {
-                    if (optionSelected && optionIsCorrect) {
-                      buttonClass = "btn btn-success text-start d-flex align-items-center gap-2";
-                    } else if (optionSelected && !optionIsCorrect) {
-                      buttonClass = "btn btn-danger text-start d-flex align-items-center gap-2";
-                    } else if (!optionSelected && optionIsCorrect) {
-                      buttonClass = "btn btn-outline-success text-start d-flex align-items-center gap-2";
-                    } else {
-                      buttonClass = "btn btn-outline-secondary text-start d-flex align-items-center gap-2";
-                    }
+                  } else if (optionShowFeedback && optionSelected) {
+                    buttonClass = optionIsCorrect
+                      ? "btn btn-outline-secondary text-start d-flex align-items-center gap-2"
+                      : "btn btn-danger text-start d-flex align-items-center gap-2";
                   }
 
                   return (
@@ -183,11 +225,8 @@ export default function QuizRunner({ quiz, attempt, onSubmit }: QuizRunnerProps)
                     >
                       <span className="badge bg-light text-secondary border">{String.fromCharCode(65 + optionIndex)}</span>
                       <span>{option}</span>
-                      {!isEditing && optionShowFeedback && optionIsCorrect && (
-                        <span className="ms-auto badge bg-success-subtle text-success">Правильна відповідь</span>
-                      )}
                       {!isEditing && optionShowFeedback && optionSelected && !optionIsCorrect && (
-                        <span className="ms-auto badge bg-danger-subtle text-danger">Твоя відповідь</span>
+                        <span className="ms-auto badge bg-danger-subtle text-danger">Your answer</span>
                       )}
                     </button>
                   );
@@ -198,25 +237,41 @@ export default function QuizRunner({ quiz, attempt, onSubmit }: QuizRunnerProps)
         })}
       </div>
 
-      <footer className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <footer className="d-flex flex-column gap-3">
         <div className="text-secondary small">
           {isEditing ? (
-            <span>
-              Пройдено питань: {answeredCount}/{quiz.questions.length}
-            </span>
-          ) : attempt ? (
-            <span>
-              Поточний результат: {attempt.scoredPoints}/{attempt.totalPoints} балів
-            </span>
+            <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+              <span>Answered: {answeredCount}/{normalizedQuestions.length}</span>
+              <span>Complete all questions to submit the quiz.</span>
+            </div>
+          ) : currentScore ? (
+            <div className={`alert ${currentScore.percentage >= PASSING_PERCENTAGE ? "alert-success" : "alert-warning"} mb-0`}>
+              <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div>
+                  <strong>Result:</strong> {currentScore.scored}/{currentScore.total} pts
+                  <span className="badge bg-primary-subtle text-primary ms-2">{currentScore.percentage}%</span>
+                </div>
+                <span className="text-secondary small">
+                  {pendingAttempt && !attempt ? "Waiting for confirmation..." : formatTimestamp((attempt ?? pendingAttempt)!.completedAt)}
+                </span>
+              </div>
+              <div className="text-secondary small mt-2">
+                {currentScore.percentage >= PASSING_PERCENTAGE ? (
+                  <span className="text-success fw-semibold">Great job! This quiz counts towards your progress.</span>
+                ) : (
+                  <span className="text-danger">You need at least 80% to pass. Retake the quiz to improve your score.</span>
+                )}
+              </div>
+            </div>
           ) : (
-            <span>Готово до перевірки</span>
+            <span>Ready to submit.</span>
           )}
           {errorMessage && <div className="text-danger small mt-2">{errorMessage}</div>}
         </div>
-        <div className="d-flex gap-2">
-          {attempt && !isEditing && (
+        <div className="d-flex flex-wrap gap-2">
+          {activeAttempt && !isEditing && (
             <button type="button" className="btn btn-outline-primary" onClick={startRetake} disabled={isSubmitting}>
-              Перепройти вікторину
+              Retake quiz
             </button>
           )}
           <button
@@ -225,7 +280,7 @@ export default function QuizRunner({ quiz, attempt, onSubmit }: QuizRunnerProps)
             onClick={submitAttempt}
             disabled={!isEditing || isSubmitting}
           >
-            {isSubmitting ? "Надсилання..." : "Надіслати відповіді"}
+            {isSubmitting ? "Submitting…" : "Submit answers"}
           </button>
         </div>
       </footer>

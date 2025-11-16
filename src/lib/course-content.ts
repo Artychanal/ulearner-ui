@@ -1,4 +1,5 @@
 import type { CourseModule, CourseSummary } from '@/types/course';
+import { getApiBaseUrl } from '@/lib/api';
 
 export function buildModulesFromLessons(course: CourseSummary): CourseModule[] {
   if (!course.lessons.length) {
@@ -11,21 +12,27 @@ export function buildModulesFromLessons(course: CourseSummary): CourseModule[] {
     description: `Estimated duration: ${lesson.duration}`,
     items: (() => {
       const items: CourseModule['items'] = [];
-      if (lesson.videoUrl) {
+      const resolvedVideoUrl =
+        lesson.videoUrl ??
+        (lesson.videoMediaId ? `${getApiBaseUrl()}/media/${lesson.videoMediaId}` : undefined);
+
+      if (resolvedVideoUrl) {
         items.push({
           id: `lesson-${lesson.id}-video`,
           type: 'video',
           title: lesson.title,
-          url: lesson.videoUrl,
+          url: resolvedVideoUrl,
           duration: lesson.duration,
+          mediaId: lesson.videoMediaId,
+        });
+      } else {
+        items.push({
+          id: `lesson-${lesson.id}-content`,
+          type: 'text',
+          title: lesson.title,
+          body: `Work through the "${lesson.title}" lesson as part of ${course.title}.`,
         });
       }
-      items.push({
-        id: `lesson-${lesson.id}-content`,
-        type: 'text',
-        title: lesson.title,
-        body: `Work through the "${lesson.title}" lesson as part of ${course.title}.`,
-      });
       return items;
     })(),
   }));

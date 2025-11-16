@@ -6,6 +6,7 @@ import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { CourseEntity } from '../courses/entities/course.entity';
 import { UserEntity } from '../users/entities/user.entity';
 import { UpdateProgressDto } from './dto/update-progress.dto';
+import { CertificatesService } from '../certificates/certificates.service';
 
 @Injectable()
 export class EnrollmentsService {
@@ -14,6 +15,7 @@ export class EnrollmentsService {
     private readonly enrollmentRepository: Repository<EnrollmentEntity>,
     @InjectRepository(CourseEntity)
     private readonly courseRepository: Repository<CourseEntity>,
+    private readonly certificatesService: CertificatesService,
   ) {}
 
   async listForUser(userId: string) {
@@ -53,6 +55,7 @@ export class EnrollmentsService {
   async updateProgress(userId: string, dto: UpdateProgressDto) {
     const enrollment = await this.enrollmentRepository.findOne({
       where: { id: dto.enrollmentId, user: { id: userId } },
+      relations: ['course', 'course.owner', 'user', 'certificate'],
     });
 
     if (!enrollment) {
@@ -63,6 +66,10 @@ export class EnrollmentsService {
     enrollment.completedLessons = dto.completedLessons;
     enrollment.quizAttempts = dto.quizAttempts ?? enrollment.quizAttempts;
     enrollment.lastAccessed = new Date();
+
+    if (dto.progress >= 100) {
+      await this.certificatesService.issueForEnrollment(enrollment);
+    }
 
     return this.enrollmentRepository.save(enrollment);
   }

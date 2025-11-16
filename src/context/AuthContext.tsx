@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import type { AuthState, FavoriteCourse, UserProfile } from "@/types/user";
 import type {
   AuthoredCourse,
+  CourseReview,
   CourseSummary,
   EnrolledCourseProgress,
   QuizAttempt,
@@ -41,12 +42,13 @@ import {
   fetchFavorites as fetchFavoritesApi,
   toggleFavorite as toggleFavoriteApi,
 } from "@/lib/favorites-service";
-import { uploadMedia as uploadMediaApi } from "@/lib/media-service";
+import { uploadMedia as uploadMediaApi, type MediaUploadResponse } from "@/lib/media-service";
 import {
   fetchAuthoredCourses,
   createAuthoredCourse,
   updateAuthoredCourse,
 } from "@/lib/authored-courses-service";
+import { submitCourseReview as submitCourseReviewApi } from "@/lib/course-reviews-service";
 import type { ApiUser, EnrollmentApi, FavoriteApi, ApiAuthoredCourse } from "@/types/api";
 import type { ApiError } from "@/lib/api";
 
@@ -72,7 +74,8 @@ type AuthContextValue = {
     updates: Partial<Pick<UserProfile, "name" | "email" | "avatarUrl" | "bio" | "password">>,
   ) => Promise<boolean>;
   toggleFavorite: (courseId: number | string, origin: FavoriteCourse["origin"]) => Promise<void>;
-  uploadMedia: (file: File) => Promise<string>;
+  uploadMedia: (file: File) => Promise<MediaUploadResponse>;
+  submitCourseReview: (courseId: string, payload: { rating: number; comment?: string }) => Promise<CourseReview>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -90,6 +93,18 @@ function transformEnrollment(enrollment: EnrollmentApi): EnrolledCourseProgress 
     quizAttempts: (enrollment.quizAttempts ?? []) as QuizAttempt[],
     lastAccessed: enrollment.lastAccessed ?? new Date().toISOString(),
     origin: enrollment.origin ?? "catalog",
+    certificate: enrollment.certificate
+      ? {
+          id: enrollment.certificate.id,
+          certificateNumber: enrollment.certificate.certificateNumber,
+          courseTitle: enrollment.certificate.courseTitle,
+          instructorName: enrollment.certificate.instructorName,
+          recipientName: enrollment.certificate.recipientName,
+          courseDurationMinutes: enrollment.certificate.courseDurationMinutes,
+          platformSignature: enrollment.certificate.platformSignature,
+          issuedAt: enrollment.certificate.issuedAt,
+        }
+      : null,
   };
 }
 
@@ -160,7 +175,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let changed = false;
       courses.forEach((course) => {
         const key = String(course.id);
-        if (!map.has(key)) {
+        const existing = map.get(key);
+        if (!existing || existing !== course) {
           map.set(key, course);
           changed = true;
         }
@@ -625,11 +641,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const uploadMedia = useCallback(
     async (file: File) => {
-      const result = await performAuthedRequest((tokens) => uploadMediaApi(tokens.accessToken, file));
-      console.log('uploadMedia result', result);
-      return result.url;
+      if (authState.status !== "authenticated") {
+        throw new Error("You must be logged in to upload media");
+      }
+      return performAuthedRequest((tokens) => uploadMediaApi(tokens.accessToken, file));
     },
-    [performAuthedRequest],
+    [authState.status, performAuthedRequest],
+  );
+
+  const submitCourseReview = useCallback(
+    async (courseId: string, payload: { rating: number; comment?: string }) => {
+      if (authState.status !== "authenticated") {
+        throw new Error("You must be logged in to leave a review");
+      }
+      return performAuthedRequest((tokens) =>
+        submitCourseReviewApi(tokens.accessToken, courseId, payload),
+      );
+    },
+    [authState.status, performAuthedRequest],
   );
 
   const value = useMemo<AuthContextValue>(
@@ -646,6 +675,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateProfile,
       toggleFavorite,
       uploadMedia,
+      submitCourseReview,
     }),
     [
       authState,
@@ -660,6 +690,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateProfile,
       toggleFavorite,
       uploadMedia,
+      submitCourseReview,
     ],
   );
 

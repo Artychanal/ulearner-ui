@@ -10,6 +10,9 @@ export const validationSchema = Joi.object({
   JWT_REFRESH_EXPIRES_IN: Joi.string().default('7d'),
   MEDIA_BASE_URL: Joi.string().uri().default('http://localhost:3001'),
   MEDIA_UPLOAD_DIR: Joi.string().default('uploads/media'),
+  CERTIFICATE_SIGNATURE: Joi.string().default(
+    'Empowering lifelong learners — Officially certified by ULearner',
+  ),
   POSTGRES_HOST: Joi.string().default('localhost'),
   POSTGRES_PORT: Joi.number().default(5432),
   POSTGRES_DB: Joi.string().default('ulearner'),
