@@ -8,13 +8,13 @@ The backend exposes REST APIs, handles authentication (including password resets
 
 ## Tech stack
 
-| Layer | Technology | Notes |
-| --- | --- | --- |
-| Web frontend | Next.js 16, React 19, Bootstrap 5 | App directory, Suspense boundaries, client/server components, Intersection Observer animations, dynamic routes (`/courses/[id]`, `/dashboard/*`) |
-| Backend API | NestJS 10, TypeORM, PostgreSQL | Modular architecture (auth, courses, enrollments, favorites, media, certificates, reviews, dashboard stats) |
-| Auth & security | JWT access/refresh tokens, bcrypt | Refresh rotation, secure password reset links, AdminJS session guard |
-| File uploads | AdminJS + custom media endpoints | Images & videos saved under `uploads/media` with signed URLs |
-| Admin UI | AdminJS (Express adapter) | Courses, lessons, instructors, users, testimonials, course reviews, media, analytics dashboard |
+| Layer           | Technology                        | Notes                                                                                                                                            |
+| --------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Web frontend    | Next.js 16, React 19, Bootstrap 5 | App directory, Suspense boundaries, client/server components, Intersection Observer animations, dynamic routes (`/courses/[id]`, `/dashboard/*`) |
+| Backend API     | NestJS 10, TypeORM, PostgreSQL    | Modular architecture (auth, courses, enrollments, favorites, media, certificates, reviews, dashboard stats)                                      |
+| Auth & security | JWT access/refresh tokens, bcrypt | Refresh rotation, secure password reset links, AdminJS session guard                                                                             |
+| File uploads    | AdminJS + custom media endpoints  | Images & videos saved under `uploads/media` with signed URLs                                                                                     |
+| Admin UI        | AdminJS (Express adapter)         | Courses, lessons, instructors, users, testimonials, course reviews, media, analytics dashboard                                                   |
 
 ### Repository layout
 
@@ -77,17 +77,17 @@ APP_WEB_URL=http://localhost:3000
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 
 ADMIN_EMAIL=admin@ulearner.dev
-ADMIN_PASSWORD=change-me-now
+ADMIN_PASSWORD=<admin-password>
 ADMIN_COOKIE_NAME=ulearner_admin
 ADMIN_COOKIE_SECRET=super-secret-admin-cookie
 
-MAIL_FROM_EMAIL=notifications.ulearner@gmail.com
+MAIL_FROM_EMAIL=<your-sender@domain.com>
 MAIL_FROM_NAME=ULearner
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=notifications.ulearner@gmail.com
-SMTP_PASSWORD=*** app password ***
+SMTP_HOST=<smtp-host>
+SMTP_PORT=<port>
+SMTP_SECURE=<true|false>
+SMTP_USER=<smtp-username>
+SMTP_PASSWORD=<smtp-password>
 
 MEDIA_BASE_URL=http://localhost:3001
 MEDIA_UPLOAD_DIR=uploads/media
@@ -130,14 +130,14 @@ Login with the credentials set via `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
 ## Useful scripts
 
-| Location | Command | Description |
-| --- | --- | --- |
-| root | `npm run dev` | Start Next.js frontend |
-| root | `npm run lint` | Lint frontend code |
-| `ulearner-backend` | `npm run start:dev` | Start NestJS server with hot reload |
-| `ulearner-backend` | `npm run build` | Compile backend to `dist/` |
-| `ulearner-backend` | `npm run db:migrate` | Run TypeORM migrations |
-| `ulearner-backend` | `npm run lint` | Lint backend code |
+| Location           | Command              | Description                         |
+| ------------------ | -------------------- | ----------------------------------- |
+| root               | `npm run dev`        | Start Next.js frontend              |
+| root               | `npm run lint`       | Lint frontend code                  |
+| `ulearner-backend` | `npm run start:dev`  | Start NestJS server with hot reload |
+| `ulearner-backend` | `npm run build`      | Compile backend to `dist/`          |
+| `ulearner-backend` | `npm run db:migrate` | Run TypeORM migrations              |
+| `ulearner-backend` | `npm run lint`       | Lint backend code                   |
 
 ---
 
@@ -148,6 +148,7 @@ Login with the credentials set via `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 3. After setting a new password, the user is automatically logged in (fresh JWT + refresh token issued).
 
 Frontend screens involved:
+
 - `/forgot-password` – simple form, success/error states, CTA back to login.
 - `/reset-password?token=...` – validates token, enforces password confirmation, shows expired-state fallback with CTA to request again.
 
