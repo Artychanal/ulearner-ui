@@ -21,6 +21,7 @@ A modular NestJS backend that mirrors the uLearner UI experience with PostgreSQL
    cp .env.example .env
    # adjust if your DB host/port differ
    ```
+   > The AdminJS panel reads `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_COOKIE_NAME`, and `ADMIN_COOKIE_SECRET`. Defaults exist for local dev, but be sure to override them for any shared deployment.
 3. **Start PostgreSQL** (ships with the requested `potgress/29082006` superuser):
    ```bash
    docker compose up -d postgres
@@ -107,3 +108,10 @@ src/
 - Update `.env` to point the frontend to this backend via `NEXT_PUBLIC_API_URL` if needed and set `CORS_ALLOWED_ORIGINS` if your UI runs on a different host/port.
 - The `db:revert` script rolls back the latest migration.
 - Extend the architecture with auth/roles by adding new modules and wiring them through `AppModule`.
+
+## Admin panel
+
+- The AdminJS dashboard is mounted at `http://localhost:3001/admin` alongside the REST API, so there's no need to run an extra service.
+- Sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD`. Cookies/sessions are secured by `ADMIN_COOKIE_NAME` and `ADMIN_COOKIE_SECRET`.
+- Courses, lessons, instructors, users, media, and testimonials are exposed as AdminJS resources. Deleting a course via the panel leverages the existing `ON DELETE CASCADE` on lessons so related lessons disappear automatically.
+- Use the panel to quickly audit data, toggle publish flags or clean up problematic entries without building bespoke frontend screens first.

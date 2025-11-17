@@ -1,4 +1,5 @@
 import {
+  BaseEntity,
   Column,
   CreateDateColumn,
   Entity,
@@ -10,7 +11,7 @@ import { EnrollmentEntity } from '../../enrollments/entities/enrollment.entity';
 import { FavoriteEntity } from '../../favorites/entities/favorite.entity';
 
 @Entity({ name: 'users' })
-export class UserEntity {
+export class UserEntity extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 

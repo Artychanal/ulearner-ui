@@ -1,4 +1,5 @@
 import {
+  BaseEntity,
   Column,
   CreateDateColumn,
   Entity,
@@ -11,7 +12,7 @@ import { CourseEntity } from '../../courses/entities/course.entity';
 import { MediaEntity } from '../../media/entities/media.entity';
 
 @Entity({ name: 'lessons' })
-export class LessonEntity {
+export class LessonEntity extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
@@ -33,6 +34,9 @@ export class LessonEntity {
 
   @Column({ type: 'int', default: 1 })
   position!: number;
+
+  @Column({ name: 'course_id', type: 'uuid' })
+  courseId!: string;
 
   @ManyToOne(() => CourseEntity, (course) => course.lessons, {
     onDelete: 'CASCADE',

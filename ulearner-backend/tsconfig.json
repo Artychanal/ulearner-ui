@@ -14,7 +14,8 @@
     "strict": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "jsx": "react-jsx"
   },
   "exclude": ["node_modules", "dist"]
 }

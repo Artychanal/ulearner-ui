@@ -1,4 +1,5 @@
 import {
+  BaseEntity,
   Column,
   CreateDateColumn,
   Entity,
@@ -15,7 +16,7 @@ import { UserEntity } from '../../users/entities/user.entity';
 import { CourseReviewEntity } from '../../course-reviews/entities/course-review.entity';
 
 @Entity({ name: 'courses' })
-export class CourseEntity {
+export class CourseEntity extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
@@ -45,6 +46,9 @@ export class CourseEntity {
 
   @Column({ name: 'is_published', default: true })
   isPublished!: boolean;
+
+  @Column({ name: 'instructor_id', type: 'uuid' })
+  instructorId!: string;
 
   @ManyToOne(() => InstructorEntity, (instructor) => instructor.courses, {
     nullable: false,

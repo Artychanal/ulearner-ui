@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import configuration from './config/configuration';
@@ -15,6 +15,11 @@ import { AuthoredCoursesModule } from './authored-courses/authored-courses.modul
 import { CertificatesModule } from './certificates/certificates.module';
 import { CourseReviewsModule } from './course-reviews/course-reviews.module';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
+import { AdminUiModule } from './admin/admin.module';
+import { AdminApiModule } from './admin/admin-api.module';
+import { AdminMediaController } from './admin/admin-media.controller';
+import session from 'express-session';
+import { adminSessionStore } from './admin/session-store';
 
 @Module({
   imports: [
@@ -50,10 +55,27 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
     AuthoredCoursesModule,
     CertificatesModule,
     CourseReviewsModule,
+    AdminUiModule,
+    AdminApiModule,
   ],
 })
 export class AppModule implements NestModule {
+  constructor(private readonly configService: ConfigService) {}
+
   configure(consumer: MiddlewareConsumer) {
+    const cookieSecret = this.configService.get<string>('admin.cookieSecret') ?? 'admin-session-secret';
+    const cookieName = this.configService.get<string>('admin.cookieName') ?? 'adminjs';
+
+    consumer.apply(
+      session({
+        store: adminSessionStore,
+        resave: false,
+        saveUninitialized: false,
+        secret: cookieSecret,
+        name: cookieName,
+      }),
+    ).forRoutes(AdminMediaController);
+
     consumer.apply(RequestLoggerMiddleware).forRoutes('*');
   }
 }

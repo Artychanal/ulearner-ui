@@ -13,6 +13,10 @@ export const validationSchema = Joi.object({
   CERTIFICATE_SIGNATURE: Joi.string().default(
     'Empowering lifelong learners — Officially certified by ULearner',
   ),
+  ADMIN_EMAIL: Joi.string().email().default('admin@ulearner.dev'),
+  ADMIN_PASSWORD: Joi.string().min(8).default('change-me-now'),
+  ADMIN_COOKIE_NAME: Joi.string().default('ulearner_admin'),
+  ADMIN_COOKIE_SECRET: Joi.string().min(12).default('super-secret-admin-cookie'),
   POSTGRES_HOST: Joi.string().default('localhost'),
   POSTGRES_PORT: Joi.number().default(5432),
   POSTGRES_DB: Joi.string().default('ulearner'),

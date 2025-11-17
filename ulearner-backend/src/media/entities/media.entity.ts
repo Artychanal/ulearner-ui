@@ -1,8 +1,16 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BaseEntity,
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { UserEntity } from '../../users/entities/user.entity';
 
 @Entity({ name: 'media' })
-export class MediaEntity {
+export class MediaEntity extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 

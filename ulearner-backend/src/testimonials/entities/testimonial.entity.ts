@@ -1,4 +1,5 @@
 import {
+  BaseEntity,
   Column,
   CreateDateColumn,
   Entity,
@@ -10,7 +11,7 @@ import {
 import { CourseEntity } from '../../courses/entities/course.entity';
 
 @Entity({ name: 'testimonials' })
-export class TestimonialEntity {
+export class TestimonialEntity extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
@@ -25,6 +26,9 @@ export class TestimonialEntity {
 
   @Column({ name: 'user_avatar', nullable: true })
   userAvatar?: string;
+
+  @Column({ name: 'course_id', type: 'uuid', nullable: true })
+  courseId?: string;
 
   @ManyToOne(() => CourseEntity, {
     nullable: true,

@@ -22,6 +22,12 @@ const configuration = () => ({
       process.env.CERTIFICATE_SIGNATURE ??
       'Empowering lifelong learners — Officially certified by ULearner',
   },
+  admin: {
+    email: process.env.ADMIN_EMAIL ?? 'admin@ulearner.dev',
+    password: process.env.ADMIN_PASSWORD ?? 'change-me-now',
+    cookieName: process.env.ADMIN_COOKIE_NAME ?? 'ulearner_admin',
+    cookieSecret: process.env.ADMIN_COOKIE_SECRET ?? 'super-secret-admin-cookie',
+  },
   database: {
     host: process.env.POSTGRES_HOST ?? 'localhost',
     port: parseInt(process.env.POSTGRES_PORT ?? '5432', 10),
