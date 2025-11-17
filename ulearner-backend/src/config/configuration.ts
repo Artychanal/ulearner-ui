@@ -6,6 +6,7 @@ const configuration = () => ({
       .split(',')
       .map((origin) => origin.trim())
       .filter(Boolean),
+    webUrl: process.env.APP_WEB_URL ?? 'http://localhost:3000',
   },
   auth: {
     jwtSecret: process.env.JWT_SECRET ?? 'ultra-secret-key',
@@ -27,6 +28,15 @@ const configuration = () => ({
     password: process.env.ADMIN_PASSWORD ?? 'change-me-now',
     cookieName: process.env.ADMIN_COOKIE_NAME ?? 'ulearner_admin',
     cookieSecret: process.env.ADMIN_COOKIE_SECRET ?? 'super-secret-admin-cookie',
+  },
+  mail: {
+    fromEmail: process.env.MAIL_FROM_EMAIL ?? 'no-reply@ulearner.dev',
+    fromName: process.env.MAIL_FROM_NAME ?? 'ULearner',
+    smtpHost: process.env.SMTP_HOST,
+    smtpPort: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined,
+    smtpSecure: (process.env.SMTP_SECURE ?? 'false') === 'true',
+    smtpUser: process.env.SMTP_USER,
+    smtpPassword: process.env.SMTP_PASSWORD,
   },
   database: {
     host: process.env.POSTGRES_HOST ?? 'localhost',

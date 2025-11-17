@@ -52,3 +52,17 @@ export async function updateUserProfile(accessToken: string, payload: Partial<Re
     },
   });
 }
+
+export async function requestPasswordReset(payload: { email: string }) {
+  return apiFetch<{ message: string }>('/auth/password/forgot', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function resetPasswordWithToken(payload: { token: string; password: string }) {
+  return apiFetch<AuthResponse>('/auth/password/reset', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

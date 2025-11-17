@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import configuration from './config/configuration';
@@ -18,6 +18,7 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
 import { AdminUiModule } from './admin/admin.module';
 import { AdminApiModule } from './admin/admin-api.module';
 import { AdminMediaController } from './admin/admin-media.controller';
+import { AdminStatsController } from './admin/admin-stats.controller';
 import session from 'express-session';
 import { adminSessionStore } from './admin/session-store';
 
@@ -74,7 +75,7 @@ export class AppModule implements NestModule {
         secret: cookieSecret,
         name: cookieName,
       }),
-    ).forRoutes(AdminMediaController);
+    ).forRoutes(AdminMediaController, AdminStatsController);
 
     consumer.apply(RequestLoggerMiddleware).forRoutes('*');
   }

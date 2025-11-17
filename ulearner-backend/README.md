@@ -22,6 +22,7 @@ A modular NestJS backend that mirrors the uLearner UI experience with PostgreSQL
    # adjust if your DB host/port differ
    ```
    > The AdminJS panel reads `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_COOKIE_NAME`, and `ADMIN_COOKIE_SECRET`. Defaults exist for local dev, but be sure to override them for any shared deployment.
+   > Password reset links in emails rely on `APP_WEB_URL` (defaults to `http://localhost:3000`) plus the SMTP settings described below.
 3. **Start PostgreSQL** (ships with the requested `potgress/29082006` superuser):
    ```bash
    docker compose up -d postgres
@@ -115,3 +116,10 @@ src/
 - Sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD`. Cookies/sessions are secured by `ADMIN_COOKIE_NAME` and `ADMIN_COOKIE_SECRET`.
 - Courses, lessons, instructors, users, media, and testimonials are exposed as AdminJS resources. Deleting a course via the panel leverages the existing `ON DELETE CASCADE` on lessons so related lessons disappear automatically.
 - Use the panel to quickly audit data, toggle publish flags or clean up problematic entries without building bespoke frontend screens first.
+- Admin dashboard now includes a “Platform overview” card grid sourced from `/api/v1/admin/stats` as well as inline previews for course covers, lesson videos, and user avatars. Course covers can be replaced directly from the edit form via the admin-only upload endpoint.
+
+## Password reset emails
+
+- Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, and `SMTP_PASSWORD` to enable transactional emails via Nodemailer. For local development you can leave them empty—emails will be logged to the console instead.
+- Set `MAIL_FROM_EMAIL` / `MAIL_FROM_NAME` to control the envelope sender and branding.
+- `APP_WEB_URL` should point to the public Next.js frontend (default `http://localhost:3000`). Reset links include this value, e.g., `https://app.ulearner.com/reset-password?token=...`.

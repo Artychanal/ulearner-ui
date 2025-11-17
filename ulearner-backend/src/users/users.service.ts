@@ -46,4 +46,10 @@ export class UsersService {
     });
     return this.userRepository.save(user);
   }
+
+  async updatePassword(id: string, passwordHash: string) {
+    const user = await this.findOne(id);
+    user.passwordHash = passwordHash;
+    return this.userRepository.save(user);
+  }
 }

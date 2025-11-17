@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { EditPropertyProps } from 'adminjs';
-import { Box, Button, Input, Label, Text } from '@adminjs/design-system';
+import { Box, Input, Label, Text } from '@adminjs/design-system';
 
 const ImageUploadEdit: React.FC<EditPropertyProps> = ({ property, record, onChange }) => {
   const value = (record?.params?.[property.path] as string | undefined) ?? '';

@@ -15,6 +15,7 @@ type AdminComponentIds = {
   imagePreview: string;
   videoPreview: string;
   imageUploadEdit: string;
+  dashboard: string;
 };
 
 export const buildAdminResources = (components: AdminComponentIds): ResourceWithOptions[] => {

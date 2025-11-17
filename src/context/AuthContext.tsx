@@ -32,6 +32,8 @@ import {
   refreshSession,
   fetchCurrentUser,
   updateUserProfile as updateUserProfileApi,
+  requestPasswordReset as requestPasswordResetApi,
+  resetPasswordWithToken,
 } from "@/lib/auth-service";
 import {
   fetchEnrollments,
@@ -76,6 +78,8 @@ type AuthContextValue = {
   toggleFavorite: (courseId: number | string, origin: FavoriteCourse["origin"]) => Promise<void>;
   uploadMedia: (file: File) => Promise<MediaUploadResponse>;
   submitCourseReview: (courseId: string, payload: { rating: number; comment?: string }) => Promise<CourseReview>;
+  requestPasswordReset: (email: string) => Promise<boolean>;
+  completePasswordReset: (token: string, password: string) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -338,6 +342,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return true;
       } catch (error) {
         console.error("Registration failed", error);
+        resetSession();
+        return false;
+      }
+    },
+    [hydrateSession, persistTokens, resetSession],
+  );
+
+  const requestPasswordReset = useCallback(async (email: string) => {
+    try {
+      await requestPasswordResetApi({ email });
+      return true;
+    } catch (error) {
+      console.error("Failed to request password reset", error);
+      return false;
+    }
+  }, []);
+
+  const completePasswordReset = useCallback(
+    async (token: string, password: string) => {
+      try {
+        const response = await resetPasswordWithToken({ token, password });
+        const tokens = { accessToken: response.accessToken, refreshToken: response.refreshToken };
+        persistTokens(tokens);
+        await hydrateSession(tokens);
+        return true;
+      } catch (error) {
+        console.error("Failed to reset password", error);
         resetSession();
         return false;
       }
@@ -667,6 +698,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       catalog,
       login,
       register,
+      requestPasswordReset,
+      completePasswordReset,
       logout,
       joinCourse,
       updateProgress,
@@ -682,6 +715,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       catalog,
       login,
       register,
+      requestPasswordReset,
+      completePasswordReset,
       logout,
       joinCourse,
       updateProgress,

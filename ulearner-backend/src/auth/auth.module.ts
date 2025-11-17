@@ -6,12 +6,15 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RefreshTokenEntity } from './entities/refresh-token.entity';
+import { PasswordResetTokenEntity } from './entities/password-reset-token.entity';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
     UsersModule,
-    TypeOrmModule.forFeature([RefreshTokenEntity]),
+    TypeOrmModule.forFeature([RefreshTokenEntity, PasswordResetTokenEntity]),
+    MailModule,
     JwtModule.register({}),
   ],
   controllers: [AuthController],

@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
@@ -8,10 +8,15 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefreshTokenEntity } from './entities/refresh-token.entity';
+import { PasswordResetTokenEntity } from './entities/password-reset-token.entity';
 import { UserEntity } from '../users/entities/user.entity';
 import { AuthResponseDto, AuthTokensDto } from './dto/auth-response.dto';
 import { UserResponseDto } from '../users/dto/user-response.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { MailService } from '../mail/mail.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +26,9 @@ export class AuthService {
     private readonly configService: ConfigService,
     @InjectRepository(RefreshTokenEntity)
     private readonly refreshRepository: Repository<RefreshTokenEntity>,
+    @InjectRepository(PasswordResetTokenEntity)
+    private readonly passwordResetRepository: Repository<PasswordResetTokenEntity>,
+    private readonly mailService: MailService,
   ) {}
 
   private async hashPassword(plain: string) {
@@ -146,6 +154,72 @@ export class AuthService {
     return {
       ...tokens,
       user: UserResponseDto.fromEntity(stored.user),
+    };
+  }
+
+  async requestPasswordReset(dto: RequestPasswordResetDto) {
+    const normalizedEmail = dto.email.toLowerCase();
+    const user = await this.usersService.findByEmail(normalizedEmail);
+    const response = {
+      message: 'If an account with this email exists, we sent password reset instructions.',
+    };
+
+    if (!user) {
+      return response;
+    }
+
+    await this.passwordResetRepository.delete({ userId: user.id });
+    const tokenValue = randomUUID();
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+    await this.passwordResetRepository.save(
+      this.passwordResetRepository.create({
+        token: tokenValue,
+        userId: user.id,
+        expiresAt,
+      }),
+    );
+
+    const webUrl = (this.configService.get<string>('app.webUrl') ?? 'http://localhost:3000').replace(/\/$/, '');
+    const resetUrl = `${webUrl}/reset-password?token=${tokenValue}`;
+
+    const formattedExpires = expiresAt.toLocaleString('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+
+    await this.mailService.sendMail({
+      to: user.email,
+      subject: 'Reset your ULearner password',
+      text: `Hi ${user.name},\n\nUse the link below to reset your ULearner password. This link expires on ${formattedExpires}.\n\n${resetUrl}\n\nIf you didn't request this change, you can safely ignore this email.`,
+      html: `
+        <p>Hi ${user.name},</p>
+        <p>We received a request to reset your ULearner password. Click the button below to set a new one.</p>
+        <p><a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#4c5fd5;color:white;border-radius:8px;text-decoration:none;">Reset password</a></p>
+        <p>This link expires on <strong>${formattedExpires}</strong>. If you didn't request a reset, you can safely ignore this email.</p>
+        <p>Stay curious,<br/>The ULearner Team</p>
+      `,
+    });
+
+    return response;
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<AuthResponseDto> {
+    const entry = await this.passwordResetRepository.findOne({ where: { token: dto.token } });
+    if (!entry || entry.expiresAt.getTime() < Date.now() || entry.usedAt) {
+      throw new BadRequestException('This reset link is invalid or has expired.');
+    }
+
+    const passwordHash = await this.hashPassword(dto.password);
+    const user = await this.usersService.updatePassword(entry.userId, passwordHash);
+
+    entry.usedAt = new Date();
+    await this.passwordResetRepository.save(entry);
+
+    const tokens = await this.issueTokens(user.id, user.email);
+    return {
+      ...tokens,
+      user: UserResponseDto.fromEntity(user),
     };
   }
 }

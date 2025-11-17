@@ -20,6 +20,7 @@ const adminComponents = {
   imagePreview: componentLoader.add('ImagePreview', path.join(__dirname, 'components', 'ImagePreview')),
   videoPreview: componentLoader.add('VideoPreview', path.join(__dirname, 'components', 'VideoPreview')),
   imageUploadEdit: componentLoader.add('ImageUploadEdit', path.join(__dirname, 'components', 'ImageUploadEdit')),
+  dashboard: componentLoader.add('AdminDashboard', path.join(__dirname, 'components', 'Dashboard')),
 };
 
 @Module({
@@ -39,6 +40,9 @@ const adminComponents = {
             rootPath,
             componentLoader,
             resources: buildAdminResources(adminComponents),
+            dashboard: {
+              component: adminComponents.dashboard,
+            },
             branding: {
               companyName,
               softwareBrothers: false,
