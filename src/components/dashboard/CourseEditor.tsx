@@ -109,9 +109,20 @@ export default function CourseEditor({
     initialCourse ? normalizeCourseValues(initialCourse) : defaultCourse(resolvedInstructor),
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<"title" | "description" | "imageUrl", string>>>({});
   const [videoUploads, setVideoUploads] = useState<Record<string, VideoUploadState>>({});
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const clearFieldError = (field: "title" | "description" | "imageUrl") =>
+    setFieldErrors((current) => {
+      if (!current[field]) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
 
   useEffect(() => {
     if (initialCourse) {
@@ -136,6 +147,10 @@ export default function CourseEditor({
   }, [authenticatedName, initialCourse]);
 
   const handleFieldChange = (field: keyof CourseEditorValues, value: CourseEditorValues[typeof field]) => {
+    if (submitError) {
+      setSubmitError(null);
+    }
+    clearFieldError(field as "title" | "description" | "imageUrl");
     setCourse((prev) => ({
       ...prev,
       [field]: value,
@@ -167,19 +182,21 @@ export default function CourseEditor({
     setImageUploadError(null);
     try {
       const media = await uploadMedia(file);
+      clearFieldError("imageUrl");
       setCourse((prev) => ({
         ...prev,
         imageUrl: media.url,
       }));
     } catch (error) {
       console.error("Failed to upload course cover", error);
-      setImageUploadError("Не вдалося завантажити обкладинку. Спробуйте ще раз.");
+      setImageUploadError("Failed to upload the course cover. Please try again.");
     } finally {
       setIsUploadingImage(false);
     }
   };
 
   const handleResetCourseImage = () => {
+    clearFieldError("imageUrl");
     setCourse((prev) => ({
       ...prev,
       imageUrl: "/course-thumbnails/nextjs.svg",
@@ -443,9 +460,33 @@ export default function CourseEditor({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    const validationErrors: Partial<Record<"title" | "description" | "imageUrl", string>> = {};
+    if (!course.title?.trim()) {
+      validationErrors.title = "Title is required.";
+    }
+    if (!course.description?.trim()) {
+      validationErrors.description = "Description is required.";
+    }
+    if (!course.imageUrl?.trim()) {
+      validationErrors.imageUrl = "Cover image is required.";
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      return;
+    }
+
     try {
       setIsSaving(true);
+      setSubmitError(null);
       await onSave(course);
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "We couldn’t save the course. Please check the fields and try again.";
+      setSubmitError(message);
     } finally {
       setIsSaving(false);
     }
@@ -456,10 +497,16 @@ export default function CourseEditor({
       <section className="card border-0 shadow-sm">
         <div className="card-body p-4 p-lg-5">
           <h2 className="h4 fw-semibold mb-4">Course details</h2>
+          {submitError ? (
+            <div className="alert alert-danger d-flex align-items-start gap-2" role="alert">
+              <span aria-hidden>⚠️</span>
+              <div>{submitError}</div>
+            </div>
+          ) : null}
           <div className="row g-4">
             <div className="col-lg-7">
               <label htmlFor="courseTitle" className="form-label fw-semibold">
-                Title
+                Title <span className="text-danger">*</span>
               </label>
               <input
                 id="courseTitle"
@@ -467,8 +514,8 @@ export default function CourseEditor({
                 className="form-control form-control-lg"
                 value={course.title}
                 onChange={(event) => handleFieldChange("title", event.target.value)}
-                required
               />
+              {fieldErrors.title ? <div className="text-danger small mt-1">{fieldErrors.title}</div> : null}
             </div>
             <div className="col-lg-5">
               <label htmlFor="courseCategory" className="form-label fw-semibold">
@@ -484,7 +531,7 @@ export default function CourseEditor({
             </div>
             <div className="col-lg-8">
               <label htmlFor="courseDescription" className="form-label fw-semibold">
-                Description
+                Description <span className="text-danger">*</span>
               </label>
               <textarea
                 id="courseDescription"
@@ -493,9 +540,14 @@ export default function CourseEditor({
                 value={course.description}
                 onChange={(event) => handleFieldChange("description", event.target.value)}
               />
+              {fieldErrors.description ? (
+                <div className="text-danger small mt-1">{fieldErrors.description}</div>
+              ) : null}
             </div>
             <div className="col-lg-4">
-              <label className="form-label fw-semibold">Cover image</label>
+              <label className="form-label fw-semibold">
+                Cover image <span className="text-danger">*</span>
+              </label>
               <div className="border rounded-4 overflow-hidden mb-3 bg-light-subtle" style={{ minHeight: "160px" }}>
                 <img src={courseImagePreview} alt="Course cover" className="img-fluid w-100" />
               </div>
@@ -507,6 +559,9 @@ export default function CourseEditor({
                 onChange={(event) => handleFieldChange("imageUrl", event.target.value)}
                 placeholder="https://example.com/cover.jpg"
               />
+              {fieldErrors.imageUrl ? (
+                <div className="text-danger small mt-1">{fieldErrors.imageUrl}</div>
+              ) : null}
               <div className="mt-3">
                 <label className="form-label">Upload cover</label>
                 <input

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import CourseDeleteAction from "@/components/dashboard/CourseDeleteAction";
 import FavoriteButton from "@/components/FavoriteButton";
 import type { CourseSummary } from "@/types/course";
 
@@ -211,12 +212,15 @@ export default function DashboardPage() {
                         <td>{course.modules.length}</td>
                         <td>{formatDate(course.lastUpdated)}</td>
                         <td className="text-end">
-                          <Link href={`/dashboard/courses/${course.id}/edit`} className="btn btn-sm btn-outline-primary me-2">
-                            Edit
-                          </Link>
-                          <button type="button" className="btn btn-sm btn-outline-secondary">
-                            View analytics
-                          </button>
+                          <div className="d-flex flex-wrap justify-content-end gap-2 position-relative">
+                            <Link href={`/dashboard/courses/${course.id}/edit`} className="btn btn-sm btn-outline-primary">
+                              Edit
+                            </Link>
+                            <Link href={`/dashboard/courses/${course.id}/analytics`} className="btn btn-sm btn-outline-secondary">
+                              View analytics
+                            </Link>
+                            <CourseDeleteAction courseId={course.id} courseTitle={course.title} />
+                          </div>
                         </td>
                       </tr>
                     ))}

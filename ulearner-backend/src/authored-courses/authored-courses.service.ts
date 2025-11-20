@@ -5,6 +5,8 @@ import { CourseEntity } from '../courses/entities/course.entity';
 import { LessonEntity } from '../lessons/entities/lesson.entity';
 import { InstructorEntity } from '../instructors/entities/instructor.entity';
 import { UserEntity } from '../users/entities/user.entity';
+import { EnrollmentEntity } from '../enrollments/entities/enrollment.entity';
+import { CourseReviewEntity } from '../course-reviews/entities/course-review.entity';
 import { CreateAuthoredCourseDto } from './dto/create-authored-course.dto';
 import { UpdateAuthoredCourseDto } from './dto/update-authored-course.dto';
 import { CourseModuleDto } from './dto/course-module.dto';
@@ -20,6 +22,10 @@ export class AuthoredCoursesService {
     private readonly instructorRepository: Repository<InstructorEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(EnrollmentEntity)
+    private readonly enrollmentRepository: Repository<EnrollmentEntity>,
+    @InjectRepository(CourseReviewEntity)
+    private readonly reviewRepository: Repository<CourseReviewEntity>,
   ) {}
 
   listForOwner(ownerId: string) {
@@ -128,8 +134,77 @@ export class AuthoredCoursesService {
     if (!course) {
       throw new NotFoundException('Course not found');
     }
+    await this.lessonRepository.delete({ course: { id: course.id } });
     await this.courseRepository.remove(course);
     return { id: courseId };
+  }
+
+  async analytics(ownerId: string, courseId: string) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId, owner: { id: ownerId } },
+      relations: { lessons: true },
+    });
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    const [enrollments, reviews] = await Promise.all([
+      this.enrollmentRepository.find({
+        where: { course: { id: courseId } },
+      }),
+      this.reviewRepository.find({
+        where: { course: { id: courseId } },
+      }),
+    ]);
+
+    const enrolled = enrollments.length;
+    const now = Date.now();
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const activeThisWeek = enrollments.filter((enrollment) => enrollment.lastAccessed.getTime() >= weekAgo).length;
+    const averageProgress =
+      enrolled === 0 ? 0 : enrollments.reduce((sum, enrollment) => sum + (enrollment.progress ?? 0), 0) / enrolled;
+    const completionRate =
+      enrolled === 0
+        ? 0
+        : (enrollments.filter((enrollment) => (enrollment.progress ?? 0) >= 90).length / enrolled) * 100;
+
+    const reviewsCount = reviews.length;
+    const averageRating =
+      reviewsCount === 0 ? 0 : reviews.reduce((sum, review) => sum + (review.rating ?? 0), 0) / reviewsCount;
+
+    const lastEnrollment = enrollments.reduce<Date | null>((latest, enrollment) => {
+      if (!enrollment.createdAt) {
+        return latest;
+      }
+      if (!latest || enrollment.createdAt > latest) {
+        return enrollment.createdAt;
+      }
+      return latest;
+    }, null);
+
+    const lastReview = reviews.reduce<Date | null>((latest, review) => {
+      if (!review.createdAt) {
+        return latest;
+      }
+      if (!latest || review.createdAt > latest) {
+        return review.createdAt;
+      }
+      return latest;
+    }, null);
+
+    return {
+      courseId,
+      lessonsCount: course.lessons?.length ?? 0,
+      enrolled,
+      activeThisWeek,
+      averageProgress: Number(averageProgress.toFixed(1)),
+      completionRate: Number(completionRate.toFixed(1)),
+      reviewsCount,
+      averageRating: Number(averageRating.toFixed(1)),
+      lastEnrollment: lastEnrollment ?? null,
+      lastReview: lastReview ?? null,
+      lastUpdated: course.updatedAt ?? null,
+    };
   }
 
   private async ensureInstructor(owner: UserEntity, instructorName: string) {

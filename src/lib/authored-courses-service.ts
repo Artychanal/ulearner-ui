@@ -52,3 +52,25 @@ export async function deleteAuthoredCourse(accessToken: string, courseId: string
     },
   });
 }
+
+export type CourseAnalytics = {
+  courseId: string;
+  lessonsCount: number;
+  enrolled: number;
+  activeThisWeek: number;
+  averageProgress: number;
+  completionRate: number;
+  reviewsCount: number;
+  averageRating: number;
+  lastEnrollment: string | null;
+  lastReview: string | null;
+  lastUpdated: string | null;
+};
+
+export async function fetchAuthoredCourseAnalytics(accessToken: string, courseId: string) {
+  return apiFetch<CourseAnalytics>(`/me/courses/${courseId}/analytics`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
