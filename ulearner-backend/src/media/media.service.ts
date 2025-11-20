@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -24,9 +25,10 @@ export class MediaService {
     private readonly configService: ConfigService,
   ) {
     const configuredDir = this.configService.get<string>('media.uploadDir') ?? 'uploads/media';
-    this.uploadDir = path.isAbsolute(configuredDir)
-      ? configuredDir
-      : path.join(process.cwd(), configuredDir);
+    const resolvedDir = path.isAbsolute(configuredDir)
+      ? path.normalize(configuredDir)
+      : path.resolve(process.cwd(), configuredDir);
+    this.uploadDir = resolvedDir;
   }
 
   private async ensureUploadDirExists() {
@@ -34,7 +36,16 @@ export class MediaService {
   }
 
   private getAbsolutePath(relativePath: string) {
-    return path.join(this.uploadDir, relativePath);
+    if (!relativePath || path.isAbsolute(relativePath)) {
+      throw new BadRequestException('Invalid media path');
+    }
+    const normalized = path.normalize(relativePath);
+    const resolved = path.resolve(this.uploadDir, normalized);
+    const diff = path.relative(this.uploadDir, resolved);
+    if (diff.startsWith('..') || path.isAbsolute(diff)) {
+      throw new BadRequestException('Invalid media path');
+    }
+    return resolved;
   }
 
   async create(file: Express.Multer.File, uploaderId?: string) {
