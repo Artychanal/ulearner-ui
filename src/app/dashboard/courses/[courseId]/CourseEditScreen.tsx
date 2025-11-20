@@ -49,8 +49,8 @@ export default function CourseEditScreen({ courseId }: { courseId: string }) {
     );
   }
 
-  const handleSave = (values: CourseEditorValues) => {
-    updateCourse({
+  const handleSave = async (values: CourseEditorValues) => {
+    await updateCourse({
       ...course,
       ...values,
     });

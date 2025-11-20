@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CourseCard from "@/components/CourseCard";
-import { courseCategories, courses, type Course } from "@/data/courses";
+import type { CourseSummary } from "@/types/course";
+import { fetchCatalogCourses } from "@/lib/catalog-service";
+import { adaptCatalogCourse, extractCourseCategories } from "@/lib/catalog-adapter";
 
 type SortOption = "featured" | "price-asc" | "price-desc";
 
@@ -10,7 +12,7 @@ function normalizeText(value: string) {
   return value.toLowerCase();
 }
 
-function applySearch(items: Course[], query: string) {
+function applySearch(items: CourseSummary[], query: string) {
   if (!query.trim()) {
     return items;
   }
@@ -18,12 +20,7 @@ function applySearch(items: Course[], query: string) {
   const normalized = normalizeText(query);
 
   return items.filter((course) => {
-    const haystack = [
-      course.title,
-      course.description,
-      course.instructor,
-      course.category,
-    ]
+    const haystack = [course.title, course.description, course.instructor, course.category]
       .map(normalizeText)
       .join(" ");
 
@@ -31,7 +28,7 @@ function applySearch(items: Course[], query: string) {
   });
 }
 
-function applyCategoryFilter(items: Course[], categories: string[]) {
+function applyCategoryFilter(items: CourseSummary[], categories: string[]) {
   if (categories.length === 0) {
     return items;
   }
@@ -40,7 +37,7 @@ function applyCategoryFilter(items: Course[], categories: string[]) {
   return items.filter((course) => selected.has(course.category));
 }
 
-function applySort(items: Course[], sort: SortOption) {
+function applySort(items: CourseSummary[], sort: SortOption) {
   if (sort === "price-asc") {
     return [...items].sort((a, b) => a.price - b.price);
   }
@@ -57,7 +54,44 @@ export default function CoursesPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOption>("featured");
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+  const [courses, setCourses] = useState<CourseSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const categoryDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCourses() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetchCatalogCourses({ limit: 200 });
+        const normalized = response.items.map(adaptCatalogCourse);
+
+        if (active) {
+          setCourses(normalized);
+        }
+      } catch (err) {
+        if (active) {
+          setError(err instanceof Error ? err.message : "Failed to load courses");
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadCourses();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const courseCategories = useMemo(() => extractCourseCategories(courses), [courses]);
 
   const selectedCategoryList = courseCategories.filter((category) => selectedCategories.includes(category));
 
@@ -72,7 +106,7 @@ export default function CoursesPage() {
     const afterSearch = applySearch(courses, query);
     const afterCategoryFilter = applyCategoryFilter(afterSearch, selectedCategories);
     return applySort(afterCategoryFilter, sort);
-  }, [query, selectedCategories, sort]);
+  }, [courses, query, selectedCategories, sort]);
 
   const handleCategoryToggle = useCallback((category: string) => {
     setSelectedCategories((current) =>
@@ -199,92 +233,51 @@ export default function CoursesPage() {
                         id="catalog-category-menu"
                         className="dropdown-menu show w-100 shadow-sm border-0 mt-2 p-3"
                         role="menu"
-                        style={{ zIndex: 1055 }}
+                        aria-labelledby="catalog-category-label"
                       >
-                        <div
-                          className="d-flex flex-column gap-2"
-                          role="group"
-                          aria-labelledby="catalog-category-label"
-                          style={{ maxHeight: "18rem", overflowY: "auto" }}
-                        >
+                        <div className="d-flex flex-column gap-2">
                           {courseCategories.map((category) => {
-                            const inputId = `category-${category.replace(/\s+/g, "-").toLowerCase()}`;
-                            const selected = selectedCategories.includes(category);
-
+                            const checked = selectedCategories.includes(category);
                             return (
-                              <label
-                                key={category}
-                                htmlFor={inputId}
-                                className={`d-flex align-items-center justify-content-between gap-3 rounded-3 px-3 py-2 ${
-                                  selected ? "bg-primary bg-opacity-10" : ""
-                                }`}
-                              >
-                                <span className="fw-semibold">{category}</span>
+                              <label key={category} className="d-flex align-items-center gap-2">
                                 <input
-                                  id={inputId}
                                   type="checkbox"
                                   className="form-check-input"
-                                  checked={selected}
+                                  checked={checked}
                                   onChange={() => handleCategoryToggle(category)}
                                 />
+                                <span>{category}</span>
                               </label>
                             );
                           })}
-                        </div>
-                        <div className="d-flex justify-content-between align-items-center pt-3 mt-3 border-top">
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-link text-decoration-none px-0"
-                            onClick={() => setSelectedCategories([])}
-                          >
-                            Clear all
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-primary"
-                            onClick={() => setIsCategoryMenuOpen(false)}
-                          >
-                            Done
-                          </button>
+                          {courseCategories.length === 0 && (
+                            <p className="text-secondary small mb-0">Categories will appear once courses load.</p>
+                          )}
                         </div>
                       </div>
                     )}
                   </div>
-                  {selectedCategoryList.length > 0 && (
-                    <div className="d-flex flex-wrap gap-2 mt-2">
-                      {selectedCategoryList.map((category) => (
-                        <span
-                          key={category}
-                          className="badge rounded-pill bg-primary-subtle text-primary fw-semibold"
-                        >
-                          {category}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
                 <div className="col-12 col-lg-2">
-                  <label htmlFor="sort-select" className="form-label small text-uppercase text-secondary fw-semibold">
+                  <label htmlFor="catalog-sort" className="form-label small text-uppercase text-secondary fw-semibold">
                     Sort by
                   </label>
                   <select
-                    id="sort-select"
+                    id="catalog-sort"
                     className="form-select form-select-lg"
                     value={sort}
                     onChange={(event) => setSort(event.target.value as SortOption)}
                   >
                     <option value="featured">Featured</option>
-                    <option value="price-asc">Price: Low to high</option>
-                    <option value="price-desc">Price: High to low</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
                   </select>
                 </div>
               </div>
               {activeFilters && (
                 <div className="d-flex justify-content-between align-items-center mt-3">
-                  <span className="text-secondary small">
-                    Showing {filteredCourses.length} of {courses.length} courses
-                  </span>
-                  <button type="button" className="btn btn-sm btn-outline-secondary" onClick={resetFilters}>
+                  <span className="small text-secondary">Filters applied</span>
+                  <button type="button" className="btn btn-link btn-sm text-decoration-none" onClick={resetFilters}>
                     Reset filters
                   </button>
                 </div>
@@ -293,25 +286,31 @@ export default function CoursesPage() {
           </div>
         </header>
 
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <span className="text-secondary">
-            {filteredCourses.length} {filteredCourses.length === 1 ? "course" : "courses"} available
-          </span>
-          {!activeFilters && <span className="badge bg-primary bg-opacity-10 text-primary fw-semibold">Trending</span>}
-        </div>
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            {error}
+          </div>
+        )}
 
-        {filteredCourses.length === 0 ? (
+        {isLoading ? (
           <div className="text-center py-5">
-            <h2 className="h4 fw-semibold mb-2">No courses match your filters</h2>
-            <p className="text-secondary mb-3">Try adjusting your keywords or selecting different categories.</p>
-            <button type="button" className="btn btn-outline-primary" onClick={resetFilters}>
-              Clear filters
-            </button>
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading courses…</span>
+            </div>
+          </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="text-center text-secondary py-5">
+            <p className="mb-3">No courses match your filters just yet.</p>
+            {activeFilters && (
+              <button type="button" className="btn btn-outline-primary" onClick={resetFilters}>
+                Clear filters
+              </button>
+            )}
           </div>
         ) : (
           <div className="row g-4">
             {filteredCourses.map((course) => (
-              <div key={course.id} className="col-md-6 col-xl-4 d-flex">
+              <div key={course.id} className="col-md-6 col-lg-4">
                 <CourseCard course={course} />
               </div>
             ))}

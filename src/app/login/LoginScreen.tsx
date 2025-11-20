@@ -5,17 +5,12 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
-const demoAccounts = [
-  { email: "learner@example.com", password: "password123" },
-  { email: "mentor@example.com", password: "mentor123" },
-];
-
 export default function LoginScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { authState, login } = useAuth();
-  const [email, setEmail] = useState(demoAccounts[0].email);
-  const [password, setPassword] = useState(demoAccounts[0].password);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -34,7 +29,7 @@ export default function LoginScreen() {
     setIsSubmitting(false);
 
     if (!success) {
-      setError("Invalid email or password. Use one of the demo accounts below.");
+      setError("Invalid email or password. Please try again.");
       return;
     }
 
@@ -88,23 +83,16 @@ export default function LoginScreen() {
                       onChange={(event) => setPassword(event.target.value)}
                       required
                     />
+                    <div className="text-end mt-2">
+                      <Link href="/forgot-password" className="small text-decoration-none">
+                        Forgot password?
+                      </Link>
+                    </div>
                   </div>
                   <button type="submit" className="btn btn-primary btn-lg w-100" disabled={isSubmitting}>
                     {isSubmitting ? "Logging in…" : "Log in"}
                   </button>
                 </form>
-
-                <div className="border rounded-3 px-3 py-3 mt-4">
-                  <p className="small text-secondary mb-2">Try the app with these demo accounts:</p>
-                  <ul className="list-unstyled small mb-0">
-                    {demoAccounts.map((account) => (
-                      <li key={account.email} className="d-flex justify-content-between align-items-center">
-                        <span className="fw-semibold">{account.email}</span>
-                        <span className="font-monospace text-secondary">{account.password}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
 
                 <p className="text-center text-secondary mt-4 mb-0">
                   New to ULearner?{" "}

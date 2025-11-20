@@ -27,10 +27,10 @@ export default function NewCoursePage() {
     );
   }
 
-  const handleSave = (course: CourseEditorValues) => {
+  const handleSave = async (course: CourseEditorValues) => {
     const { id, ...rest } = course;
     void id;
-    const newId = createCourse(rest);
+    const newId = await createCourse(rest);
     router.push(`/dashboard/courses/${newId}/edit`);
   };
 

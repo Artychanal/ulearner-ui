@@ -1,25 +1,22 @@
 
-import Image from "next/image";
 import Link from "next/link";
 import FavoriteButton from "@/components/FavoriteButton";
-import { Course } from "@/data/courses";
+import type { CourseSummary } from "@/types/course";
 
 interface CourseCardProps {
-  course: Course;
+  course: CourseSummary;
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
   return (
     <div className="card h-100 border-0 course-card elevated overflow-hidden position-relative">
       <span className="course-card-glow" aria-hidden />
-      <div className="ratio ratio-16x9 position-relative">
-        <Image
-          src={course.imageUrl}
+      <div className="ratio ratio-16x9 position-relative overflow-hidden rounded-top">
+        <img
+          src={course.imageUrl ?? "/course-thumbnails/nextjs.svg"}
           alt={course.title}
-          fill
-          sizes="(min-width: 1200px) 400px, (min-width: 992px) 33vw, (min-width: 576px) 50vw, 100vw"
-          className="object-fit-cover rounded-top"
-          priority={false}
+          className="w-100 h-100 object-fit-cover"
+          loading="lazy"
         />
         <Link
           href={`/courses/${course.id}`}

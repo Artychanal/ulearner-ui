@@ -1,0 +1,52 @@
+import {
+  BaseEntity,
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { CourseEntity } from '../../courses/entities/course.entity';
+import { MediaEntity } from '../../media/entities/media.entity';
+
+@Entity({ name: 'lessons' })
+export class LessonEntity extends BaseEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
+
+  @Column({ length: 180 })
+  title!: string;
+
+  @Column({ name: 'duration_minutes', type: 'int', default: 10 })
+  durationMinutes!: number;
+
+  @Column({ name: 'video_url', nullable: true })
+  videoUrl?: string;
+
+  @Column({ name: 'video_media_id', type: 'uuid', nullable: true })
+  videoMediaId?: string;
+
+  @ManyToOne(() => MediaEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'video_media_id' })
+  videoMedia?: MediaEntity | null;
+
+  @Column({ type: 'int', default: 1 })
+  position!: number;
+
+  @Column({ name: 'course_id', type: 'uuid' })
+  courseId!: string;
+
+  @ManyToOne(() => CourseEntity, (course) => course.lessons, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'course_id' })
+  course!: CourseEntity;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt!: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt!: Date;
+}

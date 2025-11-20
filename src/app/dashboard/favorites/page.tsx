@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -134,13 +133,12 @@ export default function FavoritesPage() {
             {favorites.map((favorite) => (
               <div key={favorite.key} className="col-md-6 col-xl-4 d-flex">
                 <article className="card border-0 shadow-sm h-100 w-100 overflow-hidden position-relative">
-                  <div className="ratio ratio-16x9 position-relative">
-                    <Image
+                  <div className="ratio ratio-16x9 position-relative overflow-hidden">
+                    <img
                       src={favorite.imageUrl}
                       alt={favorite.title}
-                      fill
-                      sizes="(min-width: 1200px) 400px, (min-width: 768px) 50vw, 100vw"
-                      className="object-fit-cover"
+                      className="w-100 h-100 object-fit-cover"
+                      loading="lazy"
                     />
                     <Link
                       href={favorite.href}
