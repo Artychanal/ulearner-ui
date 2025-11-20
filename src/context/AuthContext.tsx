@@ -49,6 +49,9 @@ import {
   fetchAuthoredCourses,
   createAuthoredCourse,
   updateAuthoredCourse,
+  deleteAuthoredCourse,
+  fetchAuthoredCourseAnalytics,
+  type CourseAnalytics,
 } from "@/lib/authored-courses-service";
 import { submitCourseReview as submitCourseReviewApi } from "@/lib/course-reviews-service";
 import type { ApiUser, EnrollmentApi, FavoriteApi, ApiAuthoredCourse } from "@/types/api";
@@ -72,6 +75,8 @@ type AuthContextValue = {
   updateProgress: (progress: EnrolledCourseProgress) => Promise<void>;
   createCourse: (course: Omit<AuthoredCourse, "id" | "lastUpdated">) => Promise<string>;
   updateCourse: (course: AuthoredCourse) => Promise<void>;
+  deleteCourse: (courseId: string) => Promise<void>;
+  fetchCourseAnalytics: (courseId: string) => Promise<CourseAnalytics>;
   updateProfile: (
     updates: Partial<Pick<UserProfile, "name" | "email" | "avatarUrl" | "bio" | "password">>,
   ) => Promise<boolean>;
@@ -568,6 +573,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [performAuthedRequest, resetSession],
   );
 
+  const deleteCourse = useCallback(
+    async (courseId: string) => {
+      try {
+        await performAuthedRequest((tokens) => deleteAuthoredCourse(tokens.accessToken, courseId));
+
+        setAuthState((previous) => {
+          if (previous.status !== "authenticated") {
+            return previous;
+          }
+          const courseIdStr = String(courseId);
+          return {
+            status: "authenticated",
+            user: {
+              ...previous.user,
+              authoredCourses: previous.user.authoredCourses.filter(
+                (existing) => String(existing.id) !== courseIdStr,
+              ),
+              enrolledCourses: previous.user.enrolledCourses.filter(
+                (enrollment) => String(enrollment.courseId) !== courseIdStr,
+              ),
+              favoriteCourses: previous.user.favoriteCourses.filter(
+                (favorite) => String(favorite.courseId) !== courseIdStr,
+              ),
+            },
+          };
+        });
+
+        setCatalog((current) => current.filter((course) => String(course.id) !== String(courseId)));
+      } catch (error) {
+        if (isUnauthorized(error)) {
+          resetSession();
+        }
+        console.error("Failed to delete course", error);
+        throw error;
+      }
+    },
+    [performAuthedRequest, resetSession],
+  );
+
+  const fetchCourseAnalytics = useCallback(
+    async (courseId: string) => {
+      return performAuthedRequest((tokens) => fetchAuthoredCourseAnalytics(tokens.accessToken, courseId));
+    },
+    [performAuthedRequest],
+  );
+
   const updateProfile = useCallback(
     async (updates: Partial<Pick<UserProfile, "name" | "email" | "avatarUrl" | "bio" | "password">>) => {
       if (authState.status !== "authenticated") {
@@ -705,6 +756,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateProgress,
       createCourse,
       updateCourse,
+      deleteCourse,
+      fetchCourseAnalytics,
       updateProfile,
       toggleFavorite,
       uploadMedia,
@@ -722,6 +775,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateProgress,
       createCourse,
       updateCourse,
+      deleteCourse,
+      fetchCourseAnalytics,
       updateProfile,
       toggleFavorite,
       uploadMedia,

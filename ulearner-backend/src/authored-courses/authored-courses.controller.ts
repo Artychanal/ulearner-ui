@@ -56,4 +56,9 @@ export class AuthoredCoursesController {
   remove(@CurrentUser('userId') userId: string, @Param('id', new ParseUUIDPipe()) id: string) {
     return this.authoredCoursesService.remove(userId, id);
   }
+
+  @Get(':id/analytics')
+  analytics(@CurrentUser('userId') userId: string, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.authoredCoursesService.analytics(userId, id);
+  }
 }

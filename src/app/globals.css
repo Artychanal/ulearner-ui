@@ -852,7 +852,8 @@ html[data-theme="light"] .catalog-filter-card .dropdown-menu .form-check-input:c
 
 .dashboard-teach-table-wrapper {
   border-radius: 18px;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
 }
 
 .dashboard-teach-table {
