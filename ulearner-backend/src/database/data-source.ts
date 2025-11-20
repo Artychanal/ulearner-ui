@@ -22,6 +22,7 @@ import { AddLessonVideoMedia1700000000006 } from './migrations/1700000000006-Add
 import { CreateCertificatesTable1700000000007 } from './migrations/1700000000007-CreateCertificatesTable';
 import { CreateCourseReviews1700000000008 } from './migrations/1700000000008-CreateCourseReviews';
 import { CreatePasswordResetTokens1700000000009 } from './migrations/1700000000009-CreatePasswordResetTokens';
+import { DropAuthoredCoursesTable1700000000010 } from './migrations/1700000000010-DropAuthoredCoursesTable';
 
 const config = configuration();
 
@@ -58,6 +59,7 @@ const AppDataSource = new DataSource({
     CreateCertificatesTable1700000000007,
     CreateCourseReviews1700000000008,
     CreatePasswordResetTokens1700000000009,
+    DropAuthoredCoursesTable1700000000010,
   ],
 });
 
