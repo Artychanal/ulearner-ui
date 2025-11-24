@@ -7,6 +7,7 @@ export type ApiUser = {
   avatarUrl?: string;
   bio?: string;
   roles: string[];
+  status?: string;
   createdAt: string;
   updatedAt: string;
 };

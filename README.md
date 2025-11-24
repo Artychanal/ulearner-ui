@@ -89,6 +89,9 @@ SMTP_SECURE=<true|false>
 SMTP_USER=<smtp-username>
 SMTP_PASSWORD=<smtp-password>
 
+GOOGLE_CLIENT_ID=<google-oauth-client-id>
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=<same-as-above>
+
 MEDIA_BASE_URL=http://localhost:3001
 MEDIA_UPLOAD_DIR=uploads/media
 

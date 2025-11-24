@@ -8,6 +8,15 @@ interface CourseCardProps {
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
+  if (course.status === "rejected") {
+    return null;
+  }
+  const showStatus = course.status && course.status !== "approved";
+  const statusLabel =
+    course.status === "pending" ? "Pending review" : course.status === "approved" ? "Approved" : "Rejected";
+  const statusClass =
+    course.status === "pending" ? "badge bg-warning-subtle text-warning fw-semibold" : "badge bg-success-subtle text-success fw-semibold";
+
   return (
     <div className="card h-100 border-0 course-card elevated overflow-hidden position-relative">
       <span className="course-card-glow" aria-hidden />
@@ -36,6 +45,17 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
             ${course.price.toFixed(2)}
           </span>
         </div>
+        {course.status === "approved" && (
+          <div className="d-flex align-items-center gap-2 text-success fw-semibold small">
+            <span className="badge bg-success-subtle text-success fw-semibold">Trusted</span>
+            <span>Approved by moderators</span>
+          </div>
+        )}
+        {showStatus && (
+          <div className="d-flex align-items-center gap-2 text-secondary small">
+            <span className={statusClass}>{statusLabel}</span>
+          </div>
+        )}
         <div className="d-flex align-items-center gap-2 text-secondary small">
           <span className="fw-semibold">{course.instructor}</span>
           <span className="bullet" aria-hidden />

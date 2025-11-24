@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -164,17 +164,15 @@ export class CertificatesService {
       return `${prefix}-${datePart}-${randomPart}`;
     };
 
-    let certificateNumber = attempt();
-    // ensure uniqueness
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    for (let i = 0; i < 10; i++) {
+      const certificateNumber = attempt();
       const existing = await this.certificateRepository.findOne({
         where: { certificateNumber },
       });
       if (!existing) {
         return certificateNumber;
       }
-      certificateNumber = attempt();
     }
+    throw new InternalServerErrorException('Could not generate unique certificate number');
   }
 }

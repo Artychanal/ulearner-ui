@@ -18,6 +18,7 @@ export type CourseSummary = {
   imageUrl?: string;
   lessons: Lesson[];
   modules?: CourseModule[];
+  status?: 'pending' | 'approved' | 'rejected';
 };
 
 export type ContentType = "text" | "video" | "quiz";
@@ -110,6 +111,7 @@ export type AuthoredCourse = {
   category: string;
   imageUrl: string;
   isPublished: boolean;
+  status?: 'pending' | 'approved' | 'rejected';
   modules: CourseModule[];
   lastUpdated: string;
 };

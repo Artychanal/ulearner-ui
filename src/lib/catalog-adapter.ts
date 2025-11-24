@@ -30,6 +30,7 @@ export function adaptCatalogCourse(course: CatalogCourse): CourseSummary {
     imageUrl: course.imageUrl ?? undefined,
     lessons: normalizeLessons(course),
     modules: editorModules,
+    status: course.status,
   };
 }
 

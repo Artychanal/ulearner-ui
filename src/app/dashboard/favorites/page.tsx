@@ -61,7 +61,7 @@ export default function FavoritesPage() {
           title: match.title,
           description: match.description,
           meta: match.instructor,
-          imageUrl: match.imageUrl,
+          imageUrl: match.imageUrl ?? "/course-thumbnails/nextjs.svg",
           href: `/courses/${match.id}`,
         });
         continue;

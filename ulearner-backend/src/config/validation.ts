@@ -18,6 +18,7 @@ export const validationSchema = Joi.object({
   ADMIN_PASSWORD: Joi.string().min(8).default('change-me-now'),
   ADMIN_COOKIE_NAME: Joi.string().default('ulearner_admin'),
   ADMIN_COOKIE_SECRET: Joi.string().min(12).default('super-secret-admin-cookie'),
+  GOOGLE_CLIENT_ID: Joi.string().optional(),
   MAIL_FROM_EMAIL: Joi.string().email().default('notifications.ulearner@gmail.com'),
   MAIL_FROM_NAME: Joi.string().default('ULearner'),
   SMTP_HOST: Joi.string().optional(),

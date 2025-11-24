@@ -8,11 +8,13 @@ import { useAuth } from "@/context/AuthContext";
 export default function LoginScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { authState, login } = useAuth();
+  const { authState, login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleReady, setIsGoogleReady] = useState(false);
+  const googleButtonId = "google-signin-button";
 
   useEffect(() => {
     if (authState.status === "authenticated") {
@@ -20,16 +22,85 @@ export default function LoginScreen() {
     }
   }, [authState.status, router]);
 
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      return;
+    }
+    if (typeof window === "undefined") {
+      return;
+    }
+    type GoogleIdentity = {
+      accounts: {
+        id: {
+          initialize: (config: { client_id: string; callback: (response: { credential?: string }) => void }) => void;
+          renderButton: (elem: HTMLElement, options: Record<string, unknown>) => void;
+        };
+      };
+    };
+
+    const existing = document.getElementById("google-identity-script");
+    const renderButton = () => {
+      const googleIdentity = (window as typeof window & { google?: GoogleIdentity }).google;
+      if (!googleIdentity || document.getElementById(`${googleButtonId}-rendered`)) {
+        return;
+      }
+      googleIdentity.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: { credential?: string }) => {
+          if (!response.credential) {
+            setError("Google sign-in failed. Please try again.");
+            return;
+          }
+          setIsSubmitting(true);
+          const result = await loginWithGoogle(response.credential);
+          setIsSubmitting(false);
+          if (!result.success) {
+            setError(result.error ?? "Google sign-in failed. Please try again.");
+            return;
+          }
+          const redirectTo = searchParams.get("next") ?? "/dashboard";
+          router.replace(redirectTo);
+        },
+      });
+      const container = document.getElementById(googleButtonId);
+      if (container) {
+        googleIdentity.accounts.id.renderButton(container, {
+          theme: "outline",
+          size: "large",
+          width: 360,
+          shape: "pill",
+          logo_alignment: "left",
+          text: "continue_with",
+        });
+        container.id = `${googleButtonId}-rendered`;
+        setIsGoogleReady(true);
+      }
+    };
+
+    if (!existing) {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.id = "google-identity-script";
+      script.onload = renderButton;
+      document.body.appendChild(script);
+    } else {
+      renderButton();
+    }
+  }, [loginWithGoogle, router, searchParams]);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
-    const success = await login(email, password);
+    const result = await login(email, password);
     setIsSubmitting(false);
 
-    if (!success) {
-      setError("Invalid email or password. Please try again.");
+    if (!result.success) {
+      setError(result.error ?? "Invalid email or password. Please try again.");
       return;
     }
 
@@ -93,6 +164,11 @@ export default function LoginScreen() {
                     {isSubmitting ? "Logging in…" : "Log in"}
                   </button>
                 </form>
+
+                <div className="text-center my-3 text-secondary">or</div>
+                <div className="d-flex justify-content-center mb-3">
+                  <div id={googleButtonId} aria-disabled={!isGoogleReady} />
+                </div>
 
                 <p className="text-center text-secondary mt-4 mb-0">
                   New to ULearner?{" "}

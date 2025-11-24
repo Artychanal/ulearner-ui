@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Controller,
+  HttpCode,
   Post,
   UploadedFile,
   UseGuards,
@@ -17,6 +18,7 @@ export class AdminMediaController {
   constructor(private readonly mediaService: MediaService) {}
 
   @Post()
+  @HttpCode(200)
   @UseInterceptors(FileInterceptor('file'))
   async uploadFromAdmin(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
