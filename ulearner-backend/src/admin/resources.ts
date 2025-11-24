@@ -23,8 +23,8 @@ export const buildAdminResources = (components: AdminComponentIds): ResourceWith
     resource: CourseEntity,
     options: {
       navigation: 'Learning content',
-      listProperties: ['title', 'imageUrl', 'category', 'price', 'isPublished', 'instructorId', 'updatedAt'],
-      filterProperties: ['title', 'category', 'instructorId', 'isPublished'],
+      listProperties: ['title', 'imageUrl', 'category', 'price', 'status', 'isPublished', 'instructorId', 'updatedAt'],
+      filterProperties: ['title', 'category', 'instructorId', 'isPublished', 'status'],
       showProperties: [
         'id',
         'title',
@@ -32,19 +32,27 @@ export const buildAdminResources = (components: AdminComponentIds): ResourceWith
         'category',
         'price',
         'isPublished',
+        'status',
         'instructorId',
         'imageUrl',
         'lessons',
         'createdAt',
         'updatedAt',
       ],
-      editProperties: ['title', 'description', 'category', 'price', 'imageUrl', 'isPublished', 'instructorId'],
+      editProperties: ['title', 'description', 'category', 'price', 'imageUrl', 'status', 'isPublished', 'instructorId'],
       properties: {
         description: { type: 'richtext' },
         lessons: { isVisible: { list: false, edit: false } },
         owner: { isVisible: false },
         modules: hideFromForms,
         editorModules: hideFromForms,
+        status: {
+          availableValues: [
+            { value: 'pending', label: 'Pending' },
+            { value: 'approved', label: 'Approved' },
+            { value: 'rejected', label: 'Rejected' },
+          ],
+        },
         instructorId: {
           reference: 'InstructorEntity',
           isVisible: { list: true, filter: true, show: true, edit: true },
@@ -106,10 +114,18 @@ export const buildAdminResources = (components: AdminComponentIds): ResourceWith
     resource: UserEntity,
     options: {
       navigation: 'People',
-      listProperties: ['avatarUrl', 'name', 'email', 'roles', 'createdAt'],
-      showProperties: ['id', 'name', 'email', 'avatarUrl', 'bio', 'roles', 'createdAt', 'updatedAt'],
+      listProperties: ['avatarUrl', 'name', 'email', 'status', 'roles', 'createdAt'],
+      filterProperties: ['name', 'email', 'status', 'roles'],
+      showProperties: ['id', 'name', 'email', 'avatarUrl', 'bio', 'roles', 'status', 'createdAt', 'updatedAt'],
+      editProperties: ['name', 'email', 'avatarUrl', 'bio', 'status', 'roles'],
       properties: {
         passwordHash: hideFromForms,
+        status: {
+          availableValues: [
+            { value: 'active', label: 'Active' },
+            { value: 'blocked', label: 'Blocked' },
+          ],
+        },
         avatarUrl: {
           components: {
             list: components.imagePreview,

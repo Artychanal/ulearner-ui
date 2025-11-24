@@ -29,6 +29,9 @@ const configuration = () => ({
     cookieName: process.env.ADMIN_COOKIE_NAME ?? 'ulearner_admin',
     cookieSecret: process.env.ADMIN_COOKIE_SECRET ?? 'super-secret-admin-cookie',
   },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+  },
   mail: {
     fromEmail: process.env.MAIL_FROM_EMAIL ?? 'no-reply@ulearner.dev',
     fromName: process.env.MAIL_FROM_NAME ?? 'ULearner',

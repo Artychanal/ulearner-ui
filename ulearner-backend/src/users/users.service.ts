@@ -32,6 +32,7 @@ export class UsersService {
       avatarUrl: dto.avatarUrl,
       bio: dto.bio,
       roles: ['student'],
+      status: 'active',
     });
     return this.userRepository.save(entity);
   }

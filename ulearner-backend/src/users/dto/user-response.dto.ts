@@ -7,6 +7,7 @@ export class UserResponseDto {
   avatarUrl?: string;
   bio?: string;
   roles!: string[];
+  status?: string;
   createdAt!: Date;
   updatedAt!: Date;
 
@@ -23,6 +24,7 @@ export class UserResponseDto {
             .split(',')
             .map((role) => role.trim())
             .filter(Boolean),
+      status: entity.status,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };

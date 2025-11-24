@@ -17,6 +17,7 @@ import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { MailService } from '../mail/mail.service';
 import { randomUUID } from 'crypto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 
 @Injectable()
 export class AuthService {
@@ -123,6 +124,9 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    if (user.status === 'blocked') {
+      throw new UnauthorizedException('Account is blocked');
+    }
 
     const valid = await this.validatePassword(dto.password, user.passwordHash);
     if (!valid) {
@@ -149,6 +153,10 @@ export class AuthService {
     const payload = await this.jwtService.verifyAsync(dto.refreshToken, {
       secret: this.configService.get<string>('auth.refreshSecret'),
     });
+
+    if (stored.user?.status === 'blocked') {
+      throw new UnauthorizedException('Account is blocked');
+    }
 
     const tokens = await this.issueTokens(payload.sub, payload.email);
     return {
@@ -215,6 +223,63 @@ export class AuthService {
 
     entry.usedAt = new Date();
     await this.passwordResetRepository.save(entry);
+
+    const tokens = await this.issueTokens(user.id, user.email);
+    return {
+      ...tokens,
+      user: UserResponseDto.fromEntity(user),
+    };
+  }
+
+  private async verifyGoogleIdToken(idToken: string) {
+    const clientId = this.configService.get<string>('google.clientId');
+    if (!clientId) {
+      throw new BadRequestException('Google OAuth is not configured');
+    }
+
+    const response = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
+    );
+    if (!response.ok) {
+      throw new UnauthorizedException('Invalid Google token');
+    }
+    const payload = (await response.json()) as {
+      aud?: string;
+      email?: string;
+      email_verified?: string;
+      name?: string;
+      picture?: string;
+      sub?: string;
+    };
+
+    if (payload.aud !== clientId) {
+      throw new UnauthorizedException('Google token audience mismatch');
+    }
+    if (!payload.email || payload.email_verified === 'false') {
+      throw new UnauthorizedException('Google account email not verified');
+    }
+    return payload as Required<Pick<typeof payload, 'email'>> & typeof payload;
+  }
+
+  async loginWithGoogle(dto: GoogleLoginDto): Promise<AuthResponseDto> {
+    const payload = await this.verifyGoogleIdToken(dto.idToken);
+    const email = payload.email.toLowerCase();
+    let user = await this.usersService.findByEmail(email);
+
+    if (!user) {
+      const passwordHash = await this.hashPassword(randomUUID());
+      user = await this.usersService.create(
+        {
+          name: payload.name ?? email,
+          email,
+          avatarUrl: payload.picture,
+          password: 'generated',
+        } as CreateUserDto,
+        passwordHash,
+      );
+    } else if (user.status === 'blocked') {
+      throw new UnauthorizedException('Account is blocked');
+    }
 
     const tokens = await this.issueTokens(user.id, user.email);
     return {

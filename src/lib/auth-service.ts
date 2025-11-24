@@ -66,3 +66,10 @@ export async function resetPasswordWithToken(payload: { token: string; password:
     body: JSON.stringify(payload),
   });
 }
+
+export async function loginWithGoogle(payload: { idToken: string }) {
+  return apiFetch<AuthResponse>('/auth/google', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

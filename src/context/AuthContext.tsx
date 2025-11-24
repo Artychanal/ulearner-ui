@@ -34,6 +34,7 @@ import {
   updateUserProfile as updateUserProfileApi,
   requestPasswordReset as requestPasswordResetApi,
   resetPasswordWithToken,
+  loginWithGoogle as loginWithGoogleApi,
 } from "@/lib/auth-service";
 import {
   fetchEnrollments,
@@ -62,7 +63,8 @@ const DEFAULT_AVATAR = "https://www.gravatar.com/avatar/?d=mp";
 type AuthContextValue = {
   authState: AuthState;
   catalog: CourseSummary[];
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: (idToken: string) => Promise<{ success: boolean; error?: string }>;
   register: (input: {
     name: string;
     email: string;
@@ -327,11 +329,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const tokens = { accessToken: response.accessToken, refreshToken: response.refreshToken };
         persistTokens(tokens);
         await hydrateSession(tokens);
-        return true;
+        return { success: true };
       } catch (error) {
+        const message = error instanceof Error ? error.message : "Login failed";
         console.error("Login failed", error);
         resetSession();
-        return false;
+        return { success: false, error: message };
+      }
+    },
+    [hydrateSession, persistTokens, resetSession],
+  );
+
+  const loginWithGoogle = useCallback(
+    async (idToken: string) => {
+      try {
+        const response = await loginWithGoogleApi({ idToken });
+        const tokens = { accessToken: response.accessToken, refreshToken: response.refreshToken };
+        persistTokens(tokens);
+        await hydrateSession(tokens);
+        return { success: true };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Google login failed";
+        console.error("Google login failed", error);
+        resetSession();
+        return { success: false, error: message };
       }
     },
     [hydrateSession, persistTokens, resetSession],
@@ -748,6 +769,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authState,
       catalog,
       login,
+      loginWithGoogle,
       register,
       requestPasswordReset,
       completePasswordReset,
@@ -767,6 +789,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authState,
       catalog,
       login,
+      loginWithGoogle,
       register,
       requestPasswordReset,
       completePasswordReset,

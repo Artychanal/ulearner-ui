@@ -13,7 +13,13 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "ulearner-backend/dist/**",
+    "ulearner-backend/.adminjs/**",
   ]),
+  {
+    rules: {
+      "@next/next/no-img-element": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

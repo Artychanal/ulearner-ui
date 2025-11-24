@@ -76,9 +76,14 @@ export default function DashboardPage() {
             <h1 className="display-6 fw-bold mb-1">Welcome back, {user.name}</h1>
             <p className="text-secondary mb-0">Track your learning progress and refine the courses you teach.</p>
           </div>
-          <Link href="/dashboard/courses/new" className="btn btn-primary btn-lg">
-            Create new course
-          </Link>
+          <div className="d-flex flex-wrap gap-2">
+            <Link href="/dashboard/certificates" className="btn btn-outline-secondary btn-lg">
+              View certificates
+            </Link>
+            <Link href="/dashboard/courses/new" className="btn btn-primary btn-lg">
+              Create new course
+            </Link>
+          </div>
         </header>
 
         <section className="card border-0 shadow-sm dashboard-teach-card">

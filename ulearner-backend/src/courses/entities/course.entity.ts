@@ -47,6 +47,9 @@ export class CourseEntity extends BaseEntity {
   @Column({ name: 'is_published', default: true })
   isPublished!: boolean;
 
+  @Column({ length: 32, default: 'pending' })
+  status!: 'pending' | 'approved' | 'rejected';
+
   @Column({ name: 'instructor_id', type: 'uuid' })
   instructorId!: string;
 

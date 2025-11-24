@@ -55,6 +55,8 @@ export class CoursesService {
       qb.andWhere('course.price <= :maxPrice', { maxPrice });
     }
 
+    qb.andWhere("course.status != 'rejected'");
+
     const [items, total] = await qb.getManyAndCount();
     return {
       items,
@@ -75,7 +77,7 @@ export class CoursesService {
       },
     });
 
-    if (!course) {
+    if (!course || course.status === 'rejected') {
       throw new NotFoundException(`Course ${id} was not found`);
     }
 

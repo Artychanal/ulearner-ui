@@ -32,6 +32,7 @@ export type CatalogCourse = {
   instructor: CatalogInstructor;
   lessons: CatalogLesson[];
   editorModules?: unknown;
+  status?: 'pending' | 'approved' | 'rejected';
   createdAt?: string;
   updatedAt?: string;
 };

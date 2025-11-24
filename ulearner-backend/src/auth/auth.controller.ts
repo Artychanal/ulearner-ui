@@ -5,6 +5,7 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
@@ -33,5 +34,10 @@ export class AuthController {
   @Post('password/reset')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  @Post('google')
+  loginWithGoogle(@Body() dto: GoogleLoginDto) {
+    return this.authService.loginWithGoogle(dto);
   }
 }

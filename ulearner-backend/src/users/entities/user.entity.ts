@@ -33,6 +33,9 @@ export class UserEntity extends BaseEntity {
   @Column('simple-array', { default: 'student' })
   roles!: string[];
 
+  @Column({ length: 32, default: 'active' })
+  status!: 'active' | 'blocked';
+
   @OneToMany(() => EnrollmentEntity, (enrollment) => enrollment.user)
   enrollments!: EnrollmentEntity[];
 

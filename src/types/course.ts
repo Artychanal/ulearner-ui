@@ -110,6 +110,7 @@ export type AuthoredCourse = {
   category: string;
   imageUrl: string;
   isPublished: boolean;
+  status?: 'pending' | 'approved' | 'rejected';
   modules: CourseModule[];
   lastUpdated: string;
 };

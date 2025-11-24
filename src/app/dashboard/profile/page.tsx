@@ -20,7 +20,6 @@ type FormState = {
   email: string;
   avatarUrl: string;
   bio: string;
-  password: string;
 };
 
 export default function ProfilePage() {
@@ -46,7 +45,6 @@ export default function ProfilePage() {
         email: user.email ?? "",
         avatarUrl: user.avatarUrl || DEFAULT_AVATAR,
         bio: user.bio ?? "",
-        password: "",
       });
     }
   }, [authState]);
@@ -121,7 +119,7 @@ export default function ProfilePage() {
     setPendingAvatarFile(file);
     setAvatarPreviewUrl(previewUrl);
     setFormState((previous) => (previous ? { ...previous, avatarUrl: previewUrl } : previous));
-    setFeedback({ type: "success", message: "Avatar preview updated. Save changes to keep it." });
+      setFeedback({ type: "success", message: "Avatar preview updated. Save changes to keep it." });
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -137,16 +135,12 @@ export default function ProfilePage() {
       const initialAvatar = pendingAvatarFile
         ? avatarPreviewUrl ?? formState.avatarUrl ?? DEFAULT_AVATAR
         : formState.avatarUrl || avatarPreviewUrl || DEFAULT_AVATAR;
-      const payload: Partial<Pick<FormState, "name" | "email" | "avatarUrl" | "bio" | "password">> = {
+      const payload: Partial<Pick<FormState, "name" | "email" | "avatarUrl" | "bio">> = {
         name: formState.name,
         email: formState.email,
         avatarUrl: initialAvatar,
         bio: formState.bio,
       };
-
-      if (formState.password.trim()) {
-        payload.password = formState.password;
-      }
 
       let finalAvatarUrl = payload.avatarUrl;
       if (pendingAvatarFile) {
@@ -184,14 +178,7 @@ export default function ProfilePage() {
       }
 
       setFeedback({ type: "success", message: "Profile updated successfully." });
-      setFormState((previous) =>
-        previous
-          ? {
-              ...previous,
-              password: "",
-            }
-          : previous,
-      );
+      setFormState((previous) => previous);
     } catch (error) {
       console.error(error);
       setFeedback({ type: "error", message: "We couldn't update your profile. Try again." });
@@ -239,8 +226,7 @@ export default function ProfilePage() {
 
                 <div className="d-flex flex-column gap-3">
                   <p className="text-secondary small mb-0">
-                    Upload a photo from your device or pick one of the presets below. The exact link to the uploaded image is
-                    stored securely on the server.
+                    Upload a photo from your device or pick one of the presets below.
                   </p>
                   <div>
                     <label htmlFor="avatarUpload" className="btn btn-sm btn-outline-primary w-100">
@@ -327,22 +313,6 @@ export default function ProfilePage() {
                     <span className="text-secondary small d-block mt-1">
                       Your bio appears on the courses you teach and your learner profile.
                     </span>
-                  </div>
-
-                  <div>
-                    <label htmlFor="password" className="form-label fw-semibold">
-                      Password
-                    </label>
-                    <input
-                      id="password"
-                      type="password"
-                      className="form-control form-control-lg"
-                      value={formState.password}
-                      minLength={6}
-                      onChange={handleChange}
-                      placeholder="Enter a new password"
-                    />
-                    <span className="text-secondary small d-block mt-1">Leave blank to keep your current password.</span>
                   </div>
 
                   {feedback && (
